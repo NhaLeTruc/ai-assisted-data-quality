@@ -31,10 +31,7 @@ indent-style = "space"
 skip-magic-trailing-comma = false
 
 [tool.deptry]
-src = ["src"]
-ignore_obsolete = []
-ignore_missing = []
-ignore_transitive = []
+ignore = ["DEP002"]
 exclude = [
     "scripts/",
     "tests/",

@@ -1,0 +1,5 @@
+fastmcp
+great-expectations
+pandas
+fastapi
+uvicorn

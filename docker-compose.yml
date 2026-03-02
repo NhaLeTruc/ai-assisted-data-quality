@@ -1,0 +1,115 @@
+version: "3.8"
+
+services:
+  app:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - CHROMA_HOST=chroma
+      - CHROMA_PORT=8000
+      - MCP_GX_URL=http://mcp-gx:8081/mcp
+      - MCP_MC_URL=http://mcp-mc:8082/mcp
+      - MCP_CUSTOM_URL=http://mcp-custom:8083/mcp
+      - SQLITE_PATH=/data/sqlite/checkpoints.db
+      - DECISIONS_DB_PATH=/data/sqlite/decisions.db
+      - CHROMA_DATA_PATH=/data/chroma
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      - COST_TRACKING_ENABLED=true
+      - COST_ALERT_THRESHOLD=5.00
+      - MAX_REQUESTS_PER_MINUTE=60
+      - DEMO_DATA_DIR=/demo-data
+      - MEMORY_RETENTION_DAYS=90
+    volumes:
+      - ./data:/data
+      - ./demo-data:/demo-data:ro
+    depends_on:
+      chroma:
+        condition: service_healthy
+      mcp-gx:
+        condition: service_healthy
+      mcp-mc:
+        condition: service_healthy
+      mcp-custom:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      start_period: 60s
+      retries: 3
+
+  chroma:
+    image: chromadb/chroma:latest
+    ports:
+      - "8001:8000"
+    volumes:
+      - ./data/chroma:/chroma/chroma
+    environment:
+      - ANONYMIZED_TELEMETRY=false
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/heartbeat"]
+      interval: 10s
+      timeout: 5s
+      start_period: 20s
+      retries: 5
+
+  mcp-gx:
+    build: ./mcp-servers/great-expectations
+    ports:
+      - "8081:8081"
+    volumes:
+      - ./demo-data:/demo-data:ro
+    environment:
+      - GX_DATA_DIR=/demo-data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8081/health"]
+      interval: 10s
+      timeout: 5s
+      start_period: 30s
+      retries: 5
+
+  mcp-mc:
+    build: ./mcp-servers/monte-carlo-mock
+    ports:
+      - "8082:8082"
+    volumes:
+      - ./demo-data:/demo-data:ro
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8082/health"]
+      interval: 10s
+      timeout: 5s
+      start_period: 30s
+      retries: 5
+
+  mcp-custom:
+    build: ./mcp-servers/custom
+    ports:
+      - "8083:8083"
+    environment:
+      - CHROMA_HOST=chroma
+      - CHROMA_PORT=8000
+    depends_on:
+      chroma:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8083/health"]
+      interval: 10s
+      timeout: 5s
+      start_period: 30s
+      retries: 5
+
+  demo-ui:
+    build: ./ui
+    ports:
+      - "3000:8501"
+    environment:
+      - API_URL=http://app:8000
+    depends_on:
+      app:
+        condition: service_healthy
+
+networks:
+  default:
+    name: demo-network
