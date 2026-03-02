@@ -1,0 +1,112 @@
+[
+  {
+    "id": "PB-ROLLBACK-001",
+    "content": "Rollback Playbook: Revert to last known good state.\n\nStep 1: Identify the last successful checkpoint or deployment tag in the version control system.\nStep 2: Notify affected downstream teams via PagerDuty and Slack #data-incidents channel.\nStep 3: Pause all downstream pipelines that consume the affected table to prevent propagation.\nStep 4: Execute rollback command: `dbt run --models <table_name> --full-refresh --vars '{\"as_of_date\": \"<checkpoint_date>\"}'`.\nStep 5: Validate row counts and key metrics match pre-incident baseline.\nStep 6: Resume paused downstream pipelines in dependency order.\nStep 7: Trigger backfill job for any data generated during the incident window.\nStep 8: Post incident report within 24 hours.",
+    "metadata": {
+      "playbook_id": "PB-ROLLBACK-001",
+      "playbook_type": "rollback",
+      "automation_level": "semi",
+      "estimated_duration_minutes": 45,
+      "applicable_anomaly_types": "null_spike,volume_drop,schema_drift"
+    }
+  },
+  {
+    "id": "PB-ROLLBACK-002",
+    "content": "Emergency Rollback Playbook: Fast-path rollback for critical SLA breaches.\n\nStep 1: Immediately halt the ingestion pipeline for the affected source.\nStep 2: Restore the last clean snapshot from the data warehouse snapshot store.\nStep 3: Verify data integrity using automated checksums against the backup snapshot.\nStep 4: Re-enable downstream consumers once data consistency is confirmed.\nStep 5: Escalate to on-call data engineering lead if rollback takes longer than 30 minutes.",
+    "metadata": {
+      "playbook_id": "PB-ROLLBACK-002",
+      "playbook_type": "rollback",
+      "automation_level": "full",
+      "estimated_duration_minutes": 20,
+      "applicable_anomaly_types": "null_spike,volume_drop"
+    }
+  },
+  {
+    "id": "PB-BACKFILL-001",
+    "content": "Backfill Playbook: Recover missing or corrupted historical data.\n\nStep 1: Determine the exact time window of missing or corrupted data.\nStep 2: Identify the upstream source of truth (raw event store, CDC log, API).\nStep 3: Write or configure a backfill job targeting only the affected date range.\nStep 4: Run backfill in dry-run mode first and validate expected record counts.\nStep 5: Execute backfill against the production table with UPSERT semantics.\nStep 6: Re-run downstream aggregations covering the backfilled period.\nStep 7: Verify SLA metrics and alert thresholds return to normal.",
+    "metadata": {
+      "playbook_id": "PB-BACKFILL-001",
+      "playbook_type": "backfill",
+      "automation_level": "semi",
+      "estimated_duration_minutes": 90,
+      "applicable_anomaly_types": "null_spike,freshness_lag,volume_drop"
+    }
+  },
+  {
+    "id": "PB-BACKFILL-002",
+    "content": "Incremental Backfill Playbook: Targeted backfill for specific column nulls.\n\nStep 1: Identify which column(s) contain unexpected nulls and quantify affected rows.\nStep 2: Locate the authoritative source for the missing values (e.g. event log, secondary table, API call).\nStep 3: Generate UPDATE statements using the lookup source — always test on dev first.\nStep 4: Apply the UPDATE in batches of 1,000 rows to minimise lock contention.\nStep 5: Run data quality check to confirm null count has returned to baseline.\nStep 6: Record decision in the long-term memory store.",
+    "metadata": {
+      "playbook_id": "PB-BACKFILL-002",
+      "playbook_type": "backfill",
+      "automation_level": "semi",
+      "estimated_duration_minutes": 60,
+      "applicable_anomaly_types": "null_spike"
+    }
+  },
+  {
+    "id": "PB-QUARANTINE-001",
+    "content": "Quarantine Playbook: Isolate suspect data for review without deleting.\n\nStep 1: Create a quarantine table mirroring the affected table schema: `CREATE TABLE <table>_quarantine AS SELECT * FROM <table> WHERE 1=0`.\nStep 2: Move suspect rows to the quarantine table using identifying criteria (e.g. duplicate_key, null_critical_column).\nStep 3: Apply a `quarantine_reason` and `quarantined_at` audit stamp.\nStep 4: Alert the data steward team with a sample of quarantined rows for review.\nStep 5: After business review, either delete quarantined rows or restore and correct them.\nStep 6: Document final disposition in the incident log.",
+    "metadata": {
+      "playbook_id": "PB-QUARANTINE-001",
+      "playbook_type": "quarantine",
+      "automation_level": "semi",
+      "estimated_duration_minutes": 30,
+      "applicable_anomaly_types": "duplicate_records,null_spike"
+    }
+  },
+  {
+    "id": "PB-QUARANTINE-002",
+    "content": "Automated Quarantine Playbook: Rule-based row isolation for duplicate detection.\n\nStep 1: Run the deduplication detection query to identify all duplicate key groups.\nStep 2: For each group, retain the row with the most recent valid timestamp as canonical.\nStep 3: Move all non-canonical duplicates to the quarantine table automatically.\nStep 4: Generate a deduplication report and email to the data owner.\nStep 5: Schedule a follow-up review within 48 hours.",
+    "metadata": {
+      "playbook_id": "PB-QUARANTINE-002",
+      "playbook_type": "quarantine",
+      "automation_level": "full",
+      "estimated_duration_minutes": 15,
+      "applicable_anomaly_types": "duplicate_records"
+    }
+  },
+  {
+    "id": "PB-NOTIFY-001",
+    "content": "Notification Playbook: Alert stakeholders and coordinate response.\n\nStep 1: Determine severity level and identify the primary on-call owner for the affected table.\nStep 2: Post a P1/P2/P3 incident in #data-incidents Slack channel with table name, anomaly type, and detection time.\nStep 3: Page on-call engineer via PagerDuty if severity is critical or high.\nStep 4: Email downstream team leads with a brief impact statement and ETA for resolution.\nStep 5: Update the incident status every 30 minutes until resolved.\nStep 6: Close the incident in PagerDuty and post a resolution summary.",
+    "metadata": {
+      "playbook_id": "PB-NOTIFY-001",
+      "playbook_type": "notify",
+      "automation_level": "semi",
+      "estimated_duration_minutes": 10,
+      "applicable_anomaly_types": "null_spike,schema_drift,volume_drop,freshness_lag,duplicate_records"
+    }
+  },
+  {
+    "id": "PB-SCHEMA-FIX-001",
+    "content": "Schema Fix Playbook: Resolve unexpected schema changes.\n\nStep 1: Capture the current schema using `DESCRIBE <table>` and diff against the last known good schema in the schema registry.\nStep 2: Identify the source of the schema change: migration script, ORM auto-migration, or manual ALTER.\nStep 3: For additive changes (new columns): update downstream expectations and restart pipelines.\nStep 4: For breaking changes (type changes, dropped columns): revert the migration and deploy a hotfix.\nStep 5: Update the schema registry with the approved new schema version.\nStep 6: Notify all downstream teams of the schema change with migration guide.",
+    "metadata": {
+      "playbook_id": "PB-SCHEMA-FIX-001",
+      "playbook_type": "schema_fix",
+      "automation_level": "manual",
+      "estimated_duration_minutes": 60,
+      "applicable_anomaly_types": "schema_drift"
+    }
+  },
+  {
+    "id": "PB-PIPELINE-001",
+    "content": "Pipeline Restart Playbook: Recover stalled or failed data pipelines.\n\nStep 1: Check pipeline monitoring dashboard for error logs and failure reason.\nStep 2: Identify whether the failure is transient (network, memory) or persistent (bad data, schema mismatch).\nStep 3: For transient failures: trigger an automatic retry via the orchestration tool (Airflow/Prefect).\nStep 4: For persistent failures: fix the root cause first, then clear the failed task state and re-trigger.\nStep 5: Monitor the restarted pipeline until it completes successfully.\nStep 6: Verify downstream tables received updated data within SLA.",
+    "metadata": {
+      "playbook_id": "PB-PIPELINE-001",
+      "playbook_type": "pipeline_restart",
+      "automation_level": "semi",
+      "estimated_duration_minutes": 25,
+      "applicable_anomaly_types": "freshness_lag,volume_drop"
+    }
+  },
+  {
+    "id": "PB-PIPELINE-002",
+    "content": "Full Pipeline Reset Playbook: Complete teardown and rebuild for severe pipeline corruption.\n\nStep 1: Stop all consumers of the affected pipeline immediately.\nStep 2: Archive current pipeline state and logs for post-mortem.\nStep 3: Destroy and recreate the pipeline infrastructure using IaC (Terraform/CDK).\nStep 4: Re-seed the pipeline from the last clean checkpoint.\nStep 5: Run a full backtest against historical data to confirm output correctness.\nStep 6: Re-enable consumers in a canary deployment pattern — 10% traffic first, then full rollout.",
+    "metadata": {
+      "playbook_id": "PB-PIPELINE-002",
+      "playbook_type": "pipeline_restart",
+      "automation_level": "manual",
+      "estimated_duration_minutes": 120,
+      "applicable_anomaly_types": "freshness_lag,volume_drop,schema_drift"
+    }
+  }
+]

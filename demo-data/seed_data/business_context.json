@@ -1,0 +1,112 @@
+[
+  {
+    "id": "BC-ORDERS-001",
+    "content": "The orders table is the central fact table for all transactional revenue data. It captures every customer purchase event in real time via the order intake gateway. The table powers revenue reporting, financial close processes, and customer analytics. A 2-hour SLA is enforced for freshness as this table feeds the real-time finance dashboard and hourly revenue alerts. Any data quality issue in this table has immediate financial impact and triggers P1 escalation. Downstream consumers include the revenue reporting pipeline, customer analytics team, finance close batch, and marketing attribution models.",
+    "metadata": {
+      "table_name": "orders",
+      "owner_team": "data-engineering",
+      "sla_hours": 2.0,
+      "criticality": "critical",
+      "downstream_consumers": "revenue_report,finance_dashboard,customer_segment_model,marketing_pipeline"
+    }
+  },
+  {
+    "id": "BC-CUSTOMERS-001",
+    "content": "The customers table contains the canonical customer profile data including identity, contact information, and account metadata. It is the authoritative source for customer identity resolution across all systems. The table is used by the CRM platform, personalisation engine, and compliance reporting. Schema changes must go through a formal change management process as multiple downstream systems have hard dependencies on column types and naming conventions. Phone number format consistency is critical for contact centre operations.",
+    "metadata": {
+      "table_name": "customers",
+      "owner_team": "identity-platform",
+      "sla_hours": 4.0,
+      "criticality": "high",
+      "downstream_consumers": "customer_segment_model,marketing_pipeline,finance_dashboard,crm_platform"
+    }
+  },
+  {
+    "id": "BC-PRODUCTS-001",
+    "content": "The products table is the product catalogue reference table containing pricing, inventory, and categorisation data. It is updated nightly via the supplier data integration service. This table is used by the order processing system (to validate product_id references), the ecommerce storefront, and inventory management. It is a relatively stable reference table with low SLA requirements, but data defects can cause order rejections if product_ids become invalid.",
+    "metadata": {
+      "table_name": "products",
+      "owner_team": "catalogue-engineering",
+      "sla_hours": 12.0,
+      "criticality": "medium",
+      "downstream_consumers": "orders,inventory_tracker,ecommerce_storefront"
+    }
+  },
+  {
+    "id": "BC-REVENUE-001",
+    "content": "The revenue_report table is a pre-aggregated daily and hourly revenue summary built from the orders table. It is the primary source for executive dashboards, investor reporting, and financial close processes. Any inaccuracy in this table can directly impact financial statements. The table is computed by the revenue aggregation pipeline that runs hourly. A 2-hour SLA applies from order creation to revenue attribution. This is one of the most business-critical tables in the data warehouse.",
+    "metadata": {
+      "table_name": "revenue_report",
+      "owner_team": "data-analytics",
+      "sla_hours": 2.0,
+      "criticality": "critical",
+      "downstream_consumers": "finance_dashboard,executive_reporting,investor_portal"
+    }
+  },
+  {
+    "id": "BC-SEGMENT-001",
+    "content": "The customer_segment_model table stores ML-derived customer segmentation scores and labels refreshed every 4 hours. It is used by the marketing team for campaign targeting, the recommendation engine for personalisation, and customer success for churn prediction. Staleness degrades campaign targeting effectiveness but does not cause immediate revenue loss. The model uses orders and customers as primary feature sources.",
+    "metadata": {
+      "table_name": "customer_segment_model",
+      "owner_team": "ml-platform",
+      "sla_hours": 6.0,
+      "criticality": "high",
+      "downstream_consumers": "marketing_pipeline,recommendation_engine,customer_success_dashboard"
+    }
+  },
+  {
+    "id": "BC-MARKETING-001",
+    "content": "The marketing_pipeline table tracks campaign events, ad spend, and attribution data from marketing channels. It aggregates data from Google Ads, Meta Ads, email marketing, and affiliate networks. The table is used for ROI calculation, budget optimisation, and A/B test analysis. A data quality issue here can cause incorrect budget allocation decisions with direct financial impact. The pipeline runs every 30 minutes.",
+    "metadata": {
+      "table_name": "marketing_pipeline",
+      "owner_team": "growth-engineering",
+      "sla_hours": 4.0,
+      "criticality": "high",
+      "downstream_consumers": "revenue_report,customer_segment_model,ab_test_platform"
+    }
+  },
+  {
+    "id": "BC-FINANCE-001",
+    "content": "The finance_dashboard table provides near-real-time financial KPIs including GMV, net revenue, refund rate, and margin by product category and region. It is consumed directly by the CFO dashboard and finance business partners. The 2-hour SLA reflects the need for timely decision-making during trading hours. Issues with this table trigger immediate escalation to the VP of Finance and require a P1 incident response.",
+    "metadata": {
+      "table_name": "finance_dashboard",
+      "owner_team": "data-analytics",
+      "sla_hours": 2.0,
+      "criticality": "critical",
+      "downstream_consumers": "executive_reporting,investor_portal,finance_close_batch"
+    }
+  },
+  {
+    "id": "BC-INVENTORY-001",
+    "content": "The inventory_tracker table provides real-time stock levels, warehouse locations, and reorder triggers for the operations team. It is fed by the warehouse management system via CDC and updated continuously. The table is used by the ecommerce storefront to show stock availability and by procurement for automatic purchase orders. Stale inventory data can cause overselling incidents or missed reorder triggers.",
+    "metadata": {
+      "table_name": "inventory_tracker",
+      "owner_team": "operations-engineering",
+      "sla_hours": 1.0,
+      "criticality": "high",
+      "downstream_consumers": "ecommerce_storefront,products,procurement_system"
+    }
+  },
+  {
+    "id": "BC-ORDERS-ARCHIVE-001",
+    "content": "The orders_archive table contains historical order records older than 18 months, partitioned by year-month for cost-efficient querying. It is used for long-term trend analysis, regulatory compliance reporting, and data science model training. The archive is refreshed monthly from the live orders table. SLA requirements are relaxed compared to the live table, but data integrity must be maintained as corrections to archived data require formal change requests.",
+    "metadata": {
+      "table_name": "orders_archive",
+      "owner_team": "data-engineering",
+      "sla_hours": 48.0,
+      "criticality": "medium",
+      "downstream_consumers": "compliance_reporting,data_science_platform,business_intelligence"
+    }
+  },
+  {
+    "id": "BC-ACTIVITY-001",
+    "content": "The user_activity_log table captures all user interaction events including page views, clicks, searches, and session metadata from the web and mobile applications. It feeds the product analytics platform, A/B testing infrastructure, and recommendation models. The table receives approximately 50 million events per day. Data quality issues such as bot traffic spikes or tracking pixel failures can corrupt experiment results and product decisions.",
+    "metadata": {
+      "table_name": "user_activity_log",
+      "owner_team": "product-engineering",
+      "sla_hours": 1.0,
+      "criticality": "medium",
+      "downstream_consumers": "customer_segment_model,ab_test_platform,recommendation_engine,product_analytics"
+    }
+  }
+]

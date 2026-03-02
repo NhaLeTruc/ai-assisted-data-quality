@@ -1,0 +1,262 @@
+[
+  {
+    "id": "DQ-2026-0001",
+    "content": "Critical null spike detected in the orders table. The customer_id column, which is normally populated on all rows, showed a null rate of 5% (500 out of 10,000 rows) starting at 2026-01-15T08:23:00Z. Investigation traced the root cause to an upstream API failure in the order ingestion service that lost the customer association step during a deployment rollback. The issue was resolved by rolling back the API to the previous stable version and backfilling the missing customer_id values from the customer session cache. Total impact: 500 orders affected, revenue attribution disrupted for 2.5 hours.",
+    "metadata": {
+      "anomaly_type": "null_spike",
+      "severity": "critical",
+      "affected_tables": "orders",
+      "root_cause": "upstream_api_failure",
+      "resolution": "rollback_and_backfill",
+      "detected_at": "2026-01-15T08:23:00Z",
+      "resolution_time_hours": 2.5
+    }
+  },
+  {
+    "id": "DQ-2026-0002",
+    "content": "Critical null spike in customers table. The email column showed a null rate rising from 0.1% baseline to 8.3% over a 3-hour window. Root cause identified as a schema migration that set a nullable default on the email column in the registration service. The fix required a schema change to enforce NOT NULL, followed by a backfill job that recovered email addresses from the auth service event log. 415 customers were affected with incomplete profiles visible in the CRM dashboard.",
+    "metadata": {
+      "anomaly_type": "null_spike",
+      "severity": "critical",
+      "affected_tables": "customers",
+      "root_cause": "schema_change",
+      "resolution": "backfill",
+      "detected_at": "2026-01-22T14:05:00Z",
+      "resolution_time_hours": 4.0
+    }
+  },
+  {
+    "id": "DQ-2026-0003",
+    "content": "Warning-level null spike detected in the orders table for the product_id column. Null rate increased from 0% to 1.2% over a 1-hour period. Investigation found a pipeline delay in the product catalogue service caused order records to be written before the product_id lookup completed. Issue self-resolved after pipeline backlog cleared, with remaining null records backfilled from order event replay.",
+    "metadata": {
+      "anomaly_type": "null_spike",
+      "severity": "warning",
+      "affected_tables": "orders",
+      "root_cause": "pipeline_delay",
+      "resolution": "backfill",
+      "detected_at": "2026-02-03T11:47:00Z",
+      "resolution_time_hours": 1.0
+    }
+  },
+  {
+    "id": "DQ-2026-0004",
+    "content": "Warning-level null spike in products table. The inventory_count column showed 0.8% null rate appearing intermittently. Root cause was an unknown intermittent bug in the warehouse sync service sending partial payloads. Manual review and targeted backfill from warehouse system resolved the issue. No SLA breach occurred.",
+    "metadata": {
+      "anomaly_type": "null_spike",
+      "severity": "warning",
+      "affected_tables": "products",
+      "root_cause": "unknown",
+      "resolution": "manual_review",
+      "detected_at": "2026-02-10T09:30:00Z",
+      "resolution_time_hours": 0.5
+    }
+  },
+  {
+    "id": "DQ-2026-0005",
+    "content": "Critical schema drift detected in the customers table. The phone column changed from a consistent 10-character numeric format to a mixed 10/15-character format with international prefixes. This was caused by a schema change in the customer registration microservice that began accepting international phone numbers without migrating existing data. The finance_dashboard and customer_segment_model downstream consumers broke their parsing logic. Resolution required a schema revert, data normalisation script, and coordinated deployment with downstream teams.",
+    "metadata": {
+      "anomaly_type": "schema_drift",
+      "severity": "critical",
+      "affected_tables": "customers,customer_segment_model",
+      "root_cause": "schema_change",
+      "resolution": "schema_revert",
+      "detected_at": "2026-01-28T16:12:00Z",
+      "resolution_time_hours": 3.0
+    }
+  },
+  {
+    "id": "DQ-2026-0006",
+    "content": "Warning-level schema drift in the orders table. The amount column precision changed from 2 decimal places to 4 decimal places due to a currency conversion library upgrade. Downstream revenue reports began showing mismatched totals. The change was rolled back and the library downgraded while a proper migration plan was created.",
+    "metadata": {
+      "anomaly_type": "schema_drift",
+      "severity": "warning",
+      "affected_tables": "orders,revenue_report",
+      "root_cause": "schema_change",
+      "resolution": "schema_revert",
+      "detected_at": "2026-02-06T10:20:00Z",
+      "resolution_time_hours": 1.5
+    }
+  },
+  {
+    "id": "DQ-2026-0007",
+    "content": "Warning-level schema drift detected in the products table. A new column last_modified_by was added without updating the ETL pipeline schema expectations. The products feed downstream broke on the new unexpected column. Pipeline was restarted with updated schema configuration.",
+    "metadata": {
+      "anomaly_type": "schema_drift",
+      "severity": "warning",
+      "affected_tables": "products",
+      "root_cause": "schema_change",
+      "resolution": "pipeline_restart",
+      "detected_at": "2026-02-14T13:55:00Z",
+      "resolution_time_hours": 0.5
+    }
+  },
+  {
+    "id": "DQ-2026-0008",
+    "content": "Informational schema drift detected in the revenue_report table. An index was added to the report_date column during a maintenance window. The change was planned but not communicated to all dependent teams. No data quality impact. Schema change logged for audit purposes.",
+    "metadata": {
+      "anomaly_type": "schema_drift",
+      "severity": "info",
+      "affected_tables": "revenue_report",
+      "root_cause": "schema_change",
+      "resolution": "schema_fix",
+      "detected_at": "2026-02-20T04:00:00Z",
+      "resolution_time_hours": 0.25
+    }
+  },
+  {
+    "id": "DQ-2026-0009",
+    "content": "Critical volume drop in the orders table. Daily order count dropped 62% from 9,800 orders/day baseline to 3,700 orders within a 4-hour window. Root cause was an upstream API failure in the order intake gateway that silently dropped requests due to a misconfigured rate limiter. Revenue reporting and financial close processes were blocked. The gateway was restarted and the rate limiter configuration corrected. Orders were replayed from the dead-letter queue.",
+    "metadata": {
+      "anomaly_type": "volume_drop",
+      "severity": "critical",
+      "affected_tables": "orders,revenue_report",
+      "root_cause": "upstream_api_failure",
+      "resolution": "pipeline_restart",
+      "detected_at": "2026-01-20T14:30:00Z",
+      "resolution_time_hours": 2.0
+    }
+  },
+  {
+    "id": "DQ-2026-0010",
+    "content": "Critical volume drop in the marketing_pipeline table. Campaign event processing dropped to zero for 5 hours due to a Kafka topic partition rebalance that orphaned consumer groups. All active campaigns appeared to have zero engagement, causing incorrect budget pause decisions. Consumer groups were manually reassigned and the pipeline restarted to replay missed events.",
+    "metadata": {
+      "anomaly_type": "volume_drop",
+      "severity": "critical",
+      "affected_tables": "marketing_pipeline",
+      "root_cause": "pipeline_delay",
+      "resolution": "pipeline_restart",
+      "detected_at": "2026-02-01T07:15:00Z",
+      "resolution_time_hours": 5.0
+    }
+  },
+  {
+    "id": "DQ-2026-0011",
+    "content": "Warning-level volume drop in the customers table. New customer registration rate dropped 35% compared to 7-day rolling average. Investigation found reduced traffic from a major referral partner due to a promotion ending, not a data quality issue. No action required but flagged for business review.",
+    "metadata": {
+      "anomaly_type": "volume_drop",
+      "severity": "warning",
+      "affected_tables": "customers",
+      "root_cause": "data_volume",
+      "resolution": "manual_review",
+      "detected_at": "2026-02-08T09:00:00Z",
+      "resolution_time_hours": 1.0
+    }
+  },
+  {
+    "id": "DQ-2026-0012",
+    "content": "Warning-level volume drop in the products table. Product catalogue update feed dropped 28% for half a day due to a pipeline delay in the supplier data integration service. Product prices and inventory counts were stale for 6 hours. Pipeline restarted automatically after heartbeat timeout.",
+    "metadata": {
+      "anomaly_type": "volume_drop",
+      "severity": "warning",
+      "affected_tables": "products",
+      "root_cause": "pipeline_delay",
+      "resolution": "pipeline_restart",
+      "detected_at": "2026-02-16T15:40:00Z",
+      "resolution_time_hours": 0.5
+    }
+  },
+  {
+    "id": "DQ-2026-0013",
+    "content": "Critical freshness lag detected in the finance_dashboard table. Data refresh stopped for 4 hours breaching the 2-hour SLA. Root cause was a Spark job OOM failure in the nightly aggregation pipeline. Finance team was unable to produce end-of-day reports. The pipeline was restarted on a larger cluster and the backlog processed within 1 hour.",
+    "metadata": {
+      "anomaly_type": "freshness_lag",
+      "severity": "critical",
+      "affected_tables": "finance_dashboard",
+      "root_cause": "pipeline_delay",
+      "resolution": "pipeline_restart",
+      "detected_at": "2026-01-31T18:00:00Z",
+      "resolution_time_hours": 1.0
+    }
+  },
+  {
+    "id": "DQ-2026-0014",
+    "content": "Warning-level freshness lag in the orders table. Real-time order feed delayed by 35 minutes beyond the 15-minute SLA threshold due to a temporary network partition between data centre zones. Data eventually caught up automatically after the partition healed. No manual intervention required.",
+    "metadata": {
+      "anomaly_type": "freshness_lag",
+      "severity": "warning",
+      "affected_tables": "orders",
+      "root_cause": "pipeline_delay",
+      "resolution": "pipeline_restart",
+      "detected_at": "2026-02-05T22:10:00Z",
+      "resolution_time_hours": 0.5
+    }
+  },
+  {
+    "id": "DQ-2026-0015",
+    "content": "Warning-level freshness lag in the revenue_report table. Daily revenue report delayed by 90 minutes past SLA due to slow upstream orders aggregation. Finance partners notified via PagerDuty. Pipeline restarted and completed within expected window.",
+    "metadata": {
+      "anomaly_type": "freshness_lag",
+      "severity": "warning",
+      "affected_tables": "revenue_report",
+      "root_cause": "pipeline_delay",
+      "resolution": "pipeline_restart",
+      "detected_at": "2026-02-12T07:30:00Z",
+      "resolution_time_hours": 0.5
+    }
+  },
+  {
+    "id": "DQ-2026-0016",
+    "content": "Warning-level freshness lag in the customer_segment_model table. Model refresh delayed by 45 minutes beyond the 30-minute SLA. Caused by high cardinality in a feature computation step. Model refresh completed after automatic retry with increased timeout. Marketing personalisation was unaffected as previous model version was served during the delay.",
+    "metadata": {
+      "anomaly_type": "freshness_lag",
+      "severity": "warning",
+      "affected_tables": "customer_segment_model",
+      "root_cause": "pipeline_delay",
+      "resolution": "pipeline_restart",
+      "detected_at": "2026-02-18T11:45:00Z",
+      "resolution_time_hours": 0.75
+    }
+  },
+  {
+    "id": "DQ-2026-0017",
+    "content": "High-severity duplicate records detected in the orders table. 1,247 duplicate order_id values were found after a payment gateway retry mechanism created double submissions during a brief connectivity outage. Revenue calculations were inflated by approximately $42,000. Duplicates quarantined for manual review and de-duplication. Root cause fix applied to the payment retry logic to enforce idempotency keys.",
+    "metadata": {
+      "anomaly_type": "duplicate_records",
+      "severity": "high",
+      "affected_tables": "orders,revenue_report",
+      "root_cause": "schema_change",
+      "resolution": "quarantine",
+      "detected_at": "2026-01-25T10:00:00Z",
+      "resolution_time_hours": 2.0
+    }
+  },
+  {
+    "id": "DQ-2026-0018",
+    "content": "Warning-level duplicate records in the customers table. 83 duplicate customer records found with matching email addresses but different customer_id values. Caused by a race condition in the customer registration service during high-traffic periods. Duplicates quarantined and merged using a deduplication script. Customer accounts consolidated without data loss.",
+    "metadata": {
+      "anomaly_type": "duplicate_records",
+      "severity": "warning",
+      "affected_tables": "customers",
+      "root_cause": "unknown",
+      "resolution": "quarantine",
+      "detected_at": "2026-02-09T14:20:00Z",
+      "resolution_time_hours": 1.0
+    }
+  },
+  {
+    "id": "DQ-2026-0019",
+    "content": "Warning-level duplicate records detected in the products table. 12 products had duplicate entries with slightly different names but the same SKU. Caused by a data import script that lacked idempotency checks. Duplicate rows were quarantined and the canonical record retained for each product.",
+    "metadata": {
+      "anomaly_type": "duplicate_records",
+      "severity": "warning",
+      "affected_tables": "products",
+      "root_cause": "schema_change",
+      "resolution": "quarantine",
+      "detected_at": "2026-02-17T08:55:00Z",
+      "resolution_time_hours": 0.5
+    }
+  },
+  {
+    "id": "DQ-2026-0020",
+    "content": "Informational duplicate records in the revenue_report table. 3 duplicate report rows detected for the same date range due to a manual re-run of the daily aggregation job. No financial impact as the reporting layer deduplicates on read. Logged for audit purposes and the manual re-run process updated to include idempotency checks.",
+    "metadata": {
+      "anomaly_type": "duplicate_records",
+      "severity": "info",
+      "affected_tables": "revenue_report",
+      "root_cause": "unknown",
+      "resolution": "manual_review",
+      "detected_at": "2026-02-22T09:10:00Z",
+      "resolution_time_hours": 0.25
+    }
+  }
+]

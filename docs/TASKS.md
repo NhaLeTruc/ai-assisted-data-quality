@@ -201,10 +201,10 @@ print('Phase 1 imports OK')
 
 **Files:** `demo-data/sample_datasets/orders.csv`, `demo-data/sample_datasets/customers.csv`, `demo-data/sample_datasets/products.csv`
 
-- [ ] **`orders.csv`** — 10,000 rows; columns: `order_id` (UUID4), `customer_id` (UUID4, **exactly 500 rows = null**), `product_id` (UUID4), `order_date` (ISO date, random within last 90 days), `amount` (2dp float, $0.01–$5000.00), `status` (weighted random: mostly shipped/delivered), `region` (US/EU/APAC/LATAM)
-- [ ] **`customers.csv`** — 5,000 rows; `phone` column: 60% are 10-char strings like `"5551234567"`, 40% are 15-char strings like `"+15551234567890"` — intentional schema drift trigger
-- [ ] **`products.csv`** — 1,000 rows; clean reference data, no nulls, no defects; columns: `product_id`, `name`, `category`, `price`, `inventory_count`, `last_updated`
-- [ ] Generate all three with a standalone Python script (not checked in — just run once)
+- [x] **`orders.csv`** — 10,000 rows; columns: `order_id` (UUID4), `customer_id` (UUID4, **exactly 500 rows = null**), `product_id` (UUID4), `order_date` (ISO date, random within last 90 days), `amount` (2dp float, $0.01–$5000.00), `status` (weighted random: mostly shipped/delivered), `region` (US/EU/APAC/LATAM)
+- [x] **`customers.csv`** — 5,000 rows; `phone` column: 60% are 10-char strings like `"5551234567"`, 40% are 15-char strings like `"+15551234567890"` — intentional schema drift trigger
+- [x] **`products.csv`** — 1,000 rows; clean reference data, no nulls, no defects; columns: `product_id`, `name`, `category`, `price`, `inventory_count`, `last_updated`
+- [x] Generate all three with a standalone Python script (not checked in — just run once)
 
 **Verify:** `wc -l demo-data/sample_datasets/orders.csv` = 10001 (header + 10000 rows); `python -c "import csv; rows=list(csv.DictReader(open('demo-data/sample_datasets/orders.csv'))); nulls=sum(1 for r in rows if not r['customer_id']); print(nulls)"` prints a value between 480–520.
 
@@ -214,11 +214,11 @@ print('Phase 1 imports OK')
 
 **File:** `demo-data/seed_data/anomalies.json`
 
-- [ ] JSON array of exactly 20 objects, each with `"id"`, `"content"` (full narrative text), and `"metadata"` object
-- [ ] **`DQ-2026-0001`** is present, `anomaly_type=null_spike`, `severity=critical`, `affected_tables="orders"`, `root_cause=upstream_api_failure`, `resolution=rollback_and_backfill`, `resolution_time_hours=2.5`
-- [ ] Coverage: 4 null_spike (2 critical, 2 warning), 4 schema_drift (1 critical, 2 warning, 1 info), 4 volume_drop (2 critical, 2 warning), 4 freshness_lag (1 critical, 3 warning), 4 duplicate_records (1 high, 2 warning, 1 info)
-- [ ] All metadata list fields are **comma-separated strings**, not JSON arrays (e.g., `"affected_tables": "orders,revenue_report"` not `["orders","revenue_report"]`)
-- [ ] `detected_at` values are valid ISO 8601 strings; `resolution_time_hours` is a float
+- [x] JSON array of exactly 20 objects, each with `"id"`, `"content"` (full narrative text), and `"metadata"` object
+- [x] **`DQ-2026-0001`** is present, `anomaly_type=null_spike`, `severity=critical`, `affected_tables="orders"`, `root_cause=upstream_api_failure`, `resolution=rollback_and_backfill`, `resolution_time_hours=2.5`
+- [x] Coverage: 4 null_spike (2 critical, 2 warning), 4 schema_drift (1 critical, 2 warning, 1 info), 4 volume_drop (2 critical, 2 warning), 4 freshness_lag (1 critical, 3 warning), 4 duplicate_records (1 high, 2 warning, 1 info)
+- [x] All metadata list fields are **comma-separated strings**, not JSON arrays (e.g., `"affected_tables": "orders,revenue_report"` not `["orders","revenue_report"]`)
+- [x] `detected_at` values are valid ISO 8601 strings; `resolution_time_hours` is a float
 
 **Verify:** `python -c "import json; d=json.load(open('demo-data/seed_data/anomalies.json')); assert len(d)==20; assert any(r['id']=='DQ-2026-0001' for r in d); print('OK')"`.
 
@@ -228,8 +228,8 @@ print('Phase 1 imports OK')
 
 **Files:** `demo-data/seed_data/playbooks.json`, `demo-data/seed_data/business_context.json`
 
-- [ ] **`playbooks.json`** — 10 records; `PB-ROLLBACK-001` must be present with `playbook_type=rollback`; all 6 types covered: `rollback`, `backfill`, `quarantine`, `notify`, `schema_fix`, `pipeline_restart`; `applicable_anomaly_types` is a comma-separated string
-- [ ] **`business_context.json`** — 10 records; must include `orders` (`sla_hours=2.0`, `criticality=critical`), `customers`, `products`, `revenue_report`, `customer_segment_model`, `marketing_pipeline`, `finance_dashboard`, plus 3 additional tables; `downstream_consumers` is a comma-separated string
+- [x] **`playbooks.json`** — 10 records; `PB-ROLLBACK-001` must be present with `playbook_type=rollback`; all 6 types covered: `rollback`, `backfill`, `quarantine`, `notify`, `schema_fix`, `pipeline_restart`; `applicable_anomaly_types` is a comma-separated string
+- [x] **`business_context.json`** — 10 records; must include `orders` (`sla_hours=2.0`, `criticality=critical`), `customers`, `products`, `revenue_report`, `customer_segment_model`, `marketing_pipeline`, `finance_dashboard`, plus 3 additional tables; `downstream_consumers` is a comma-separated string
 
 **Verify:** `python -c "import json; p=json.load(open('demo-data/seed_data/playbooks.json')); assert len(p)==10; assert any(r['id']=='PB-ROLLBACK-001' for r in p); b=json.load(open('demo-data/seed_data/business_context.json')); assert any(r['metadata']['table_name']=='orders' for r in b); print('OK')"`.
 

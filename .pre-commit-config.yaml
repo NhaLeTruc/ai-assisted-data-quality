@@ -23,6 +23,7 @@ repos:
         args: [--fix=lf]
       - id: check-added-large-files    # Block accidental large binary commits
         args: [--maxkb=1000]
+        exclude: ^demo-data/           # CSV/JSON seed files can exceed 1 MB
       - id: no-commit-to-branch        # Protect main and dev from direct commits
         args: [--branch, main, --branch, dev]
       - id: debug-statements           # Flag forgotten debugger() / breakpoint() calls
