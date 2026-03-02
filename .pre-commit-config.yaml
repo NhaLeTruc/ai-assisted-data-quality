@@ -1,0 +1,102 @@
+default_language_version:
+  python: python3.11
+
+# Run all hooks on every commit (pre-commit stage).
+# Install with:  bash scripts/install_hooks.sh
+
+repos:
+
+  # ─────────────────────────────────────────────────────────────────────────
+  # 1. Standard file hygiene
+  # ─────────────────────────────────────────────────────────────────────────
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: check-merge-conflict       # Block commits with merge-conflict markers
+      - id: check-yaml                 # Validate YAML syntax
+      - id: check-json                 # Validate JSON syntax
+      - id: check-toml                 # Validate TOML syntax
+      - id: end-of-file-fixer          # Ensure files end with a newline
+      - id: trailing-whitespace        # Remove trailing whitespace
+        args: [--markdown-linebreak-ext=md]
+      - id: mixed-line-ending          # Normalise CRLF → LF
+        args: [--fix=lf]
+      - id: check-added-large-files    # Block accidental large binary commits
+        args: [--maxkb=1000]
+      - id: no-commit-to-branch        # Protect main and dev from direct commits
+        args: [--branch, main, --branch, dev]
+      - id: debug-statements           # Flag forgotten debugger() / breakpoint() calls
+      - id: check-case-conflict        # Catch case-only filename conflicts (macOS/Windows)
+
+  # ─────────────────────────────────────────────────────────────────────────
+  # 2. Format checking  (ruff-format — equivalent to Black)
+  # ─────────────────────────────────────────────────────────────────────────
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.8.0
+    hooks:
+      - id: ruff-format                # Enforce consistent formatting; fail if changes needed
+        name: Format check (ruff-format)
+
+  # ─────────────────────────────────────────────────────────────────────────
+  # 3. Code linting  (ruff — replaces flake8, isort, pyupgrade, etc.)
+  # ─────────────────────────────────────────────────────────────────────────
+      - id: ruff                       # Lint all staged Python files; auto-fix safe issues
+        name: Lint (ruff)
+        args: [--fix, --exit-non-zero-on-fix]
+
+  # ─────────────────────────────────────────────────────────────────────────
+  # 4. Secret scanning  (detect-secrets)
+  #    Baseline at .secrets.baseline — regenerate with:
+  #      detect-secrets scan --update .secrets.baseline
+  # ─────────────────────────────────────────────────────────────────────────
+  - repo: https://github.com/Yelp/detect-secrets
+    rev: v1.5.0
+    hooks:
+      - id: detect-secrets
+        name: Secret scan (detect-secrets)
+        args: [--baseline, .secrets.baseline]
+        exclude: |
+          (?x)^(
+            \.secrets\.baseline|
+            docs/.*|
+            .*\.lock
+          )$
+
+  # ─────────────────────────────────────────────────────────────────────────
+  # 5. File size check  (custom — 500 lines max per Python file)
+  # ─────────────────────────────────────────────────────────────────────────
+  - repo: local
+    hooks:
+      - id: check-file-size
+        name: File size check (500 lines max)
+        entry: python scripts/hooks/check_file_size.py
+        language: system
+        types: [python]
+        pass_filenames: true
+
+  # ─────────────────────────────────────────────────────────────────────────
+  # 6. Circular dependency check  (custom AST-based, scans src/)
+  # ─────────────────────────────────────────────────────────────────────────
+  - repo: local
+    hooks:
+      - id: check-circular-deps
+        name: Circular dependency check
+        entry: python scripts/hooks/check_circular_deps.py
+        language: system
+        types: [python]
+        pass_filenames: false        # operates on whole src/ tree, not per-file
+        always_run: true
+
+  # ─────────────────────────────────────────────────────────────────────────
+  # 7. Dependency health check  (deptry — unused / missing / transitive)
+  #    Checks root requirements.txt against actual imports in src/.
+  #    Skips silently if requirements.txt does not exist yet.
+  # ─────────────────────────────────────────────────────────────────────────
+  - repo: local
+    hooks:
+      - id: deptry
+        name: Dependency health (deptry)
+        entry: python scripts/hooks/run_deptry.py
+        language: system
+        pass_filenames: false
+        always_run: true

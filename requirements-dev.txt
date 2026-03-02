@@ -1,0 +1,14 @@
+# Development and tooling dependencies
+# Install with: pip install -r requirements-dev.txt
+
+# Git hook framework
+pre-commit>=3.6.0
+
+# Linting and formatting
+ruff>=0.8.0
+
+# Secret scanning
+detect-secrets>=1.5.0
+
+# Dependency health
+deptry>=0.19.0
