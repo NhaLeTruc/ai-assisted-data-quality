@@ -25,12 +25,13 @@ SRC_ROOT = Path("src")
 # Module discovery
 # ---------------------------------------------------------------------------
 
+
 def collect_modules(src_root: Path) -> dict[Path, str]:
     """Return {file_path: dotted.module.name} for every .py file under src_root."""
     mapping: dict[Path, str] = {}
     for py_file in sorted(src_root.rglob("*.py")):
         rel = py_file.relative_to(src_root.parent)  # e.g. src/agents/workflow.py
-        parts = list(rel.with_suffix("").parts)      # ['src', 'agents', 'workflow']
+        parts = list(rel.with_suffix("").parts)  # ['src', 'agents', 'workflow']
         if parts[-1] == "__init__":
             parts = parts[:-1]
         mapping[py_file] = ".".join(parts)
@@ -40,6 +41,7 @@ def collect_modules(src_root: Path) -> dict[Path, str]:
 # ---------------------------------------------------------------------------
 # Import parsing
 # ---------------------------------------------------------------------------
+
 
 def _resolve_relative(level: int, module: str | None, current_pkg: str) -> str | None:
     """Resolve a relative import to an absolute dotted module name."""
@@ -67,7 +69,9 @@ def parse_imports(
         return set()
 
     # Current package = everything before the last dot-segment.
-    current_pkg = ".".join(current_module.split(".")[:-1]) if "." in current_module else current_module
+    current_pkg = (
+        ".".join(current_module.split(".")[:-1]) if "." in current_module else current_module
+    )
 
     imports: set[str] = set()
 
@@ -82,7 +86,9 @@ def parse_imports(
             if node.level and node.level > 0:
                 # Relative import
                 resolved = _resolve_relative(node.level, node.module, current_pkg)
-                if resolved and (resolved in known_modules or resolved.startswith(internal_prefixes)):
+                if resolved and (
+                    resolved in known_modules or resolved.startswith(internal_prefixes)
+                ):
                     imports.add(resolved)
             elif node.module:
                 # Absolute import
@@ -140,6 +146,7 @@ def find_cycles(graph: dict[str, set[str]]) -> list[list[str]]:
 # ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
+
 
 def main() -> int:
     if not SRC_ROOT.exists():
