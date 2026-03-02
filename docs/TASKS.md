@@ -12,16 +12,16 @@
 
 ### T-00 · Directory skeleton and gitkeep files
 
-- [ ] Create `data/chroma/.gitkeep`
-- [ ] Create `data/sqlite/.gitkeep`
-- [ ] Create `src/__init__.py` (empty)
-- [ ] Create `src/agents/__init__.py` (empty)
-- [ ] Create `src/memory/__init__.py` (empty)
-- [ ] Create `src/rag/__init__.py` (empty)
-- [ ] Create `src/api/__init__.py` (empty)
-- [ ] Create `mcp-servers/great-expectations/` directory
-- [ ] Create `mcp-servers/monte-carlo-mock/` directory
-- [ ] Create `mcp-servers/custom/` directory
+- [x] Create `data/chroma/.gitkeep`
+- [x] Create `data/sqlite/.gitkeep`
+- [x] Create `src/__init__.py` (empty)
+- [x] Create `src/agents/__init__.py` (empty)
+- [x] Create `src/memory/__init__.py` (empty)
+- [x] Create `src/rag/__init__.py` (empty)
+- [x] Create `src/api/__init__.py` (empty)
+- [x] Create `mcp-servers/great-expectations/` directory
+- [x] Create `mcp-servers/monte-carlo-mock/` directory
+- [x] Create `mcp-servers/custom/` directory
 
 **Verify:** `git status` shows all files tracked; `ls data/chroma data/sqlite` succeeds.
 
@@ -31,8 +31,8 @@
 
 **Files:** `.gitignore`, `.env.example`
 
-- [ ] `.gitignore` — entries: `data/`, `.env`, `*.pyc`, `__pycache__/`, `*.egg-info/`, `.pytest_cache/`, `gx/`, `great_expectations/uncommitted/`
-- [ ] `.env.example` — all 17 variables from SPEC §4 with defaults filled in; `OPENAI_API_KEY=sk-...` as the only required placeholder
+- [x] `.gitignore` — entries: `data/`, `.env`, `*.pyc`, `__pycache__/`, `*.egg-info/`, `.pytest_cache/`, `gx/`, `great_expectations/uncommitted/`
+- [x] `.env.example` — all 17 variables from SPEC §4 with defaults filled in; `OPENAI_API_KEY=sk-...` as the only required placeholder
 
 **Verify:** `.env` is absent from `git status` after `cp .env.example .env`.
 
@@ -42,8 +42,8 @@
 
 **File:** `requirements.txt`
 
-- [ ] All packages from SPEC §14 with `>=` minimum version pins
-- [ ] Exact list: `langgraph>=0.2.0`, `langchain-core>=0.3.0`, `langchain>=0.3.0`, `langchain-openai>=0.2.0`, `langchain-chroma>=0.1.0`, `langchain-community>=0.3.0`, `langchain-mcp`, `llama-index>=0.11.0`, `llama-index-embeddings-openai>=0.2.0`, `chromadb>=0.5.0`, `sentence-transformers>=3.0.0`, `fastmcp`, `fastapi`, `uvicorn[standard]`, `httpx`, `pydantic>=2.0`, `tenacity`, `tiktoken`, `streamlit`, `python-dotenv`
+- [x] All packages from SPEC §14 with `>=` minimum version pins
+- [x] Exact list: `langgraph>=0.2.0`, `langchain-core>=0.3.0`, `langchain>=0.3.0`, `langchain-openai>=0.2.0`, `langchain-chroma>=0.1.0`, `langchain-community>=0.3.0`, `langchain-mcp`, `llama-index>=0.11.0`, `llama-index-embeddings-openai>=0.2.0`, `chromadb>=0.5.0`, `sentence-transformers>=3.0.0`, `fastmcp`, `fastapi`, `uvicorn[standard]`, `httpx`, `pydantic>=2.0`, `tenacity`, `tiktoken`, `streamlit`, `python-dotenv`
 
 **Verify:** `pip install --dry-run -r requirements.txt` exits 0.
 
@@ -53,14 +53,14 @@
 
 **File:** `Dockerfile`
 
-- [ ] Base: `python:3.11-slim`
-- [ ] CPU-only PyTorch first (reduces image size): `RUN pip install torch --index-url https://download.pytorch.org/whl/cpu`
-- [ ] Then: `COPY requirements.txt .` → `RUN pip install --no-cache-dir -r requirements.txt`
-- [ ] `COPY src/ ./src/`
-- [ ] `COPY scripts/ ./scripts/`
-- [ ] `COPY demo-data/ ./demo-data/`
-- [ ] `EXPOSE 8000`
-- [ ] Health check: `CMD ["uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8000"]`
+- [x] Base: `python:3.11-slim`
+- [x] CPU-only PyTorch first (reduces image size): `RUN pip install torch --index-url https://download.pytorch.org/whl/cpu`
+- [x] Then: `COPY requirements.txt .` → `RUN pip install --no-cache-dir -r requirements.txt`
+- [x] `COPY src/ ./src/`
+- [x] `COPY scripts/ ./scripts/`
+- [x] `COPY demo-data/ ./demo-data/`
+- [x] `EXPOSE 8000`
+- [x] Health check: `CMD ["uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8000"]`
 
 **Verify:** `docker build -t dq-app .` succeeds (no source files needed yet — build will succeed, startup will fail).
 
@@ -70,10 +70,10 @@
 
 **Files:** `mcp-servers/great-expectations/Dockerfile`, `mcp-servers/great-expectations/requirements.txt`, `mcp-servers/monte-carlo-mock/Dockerfile`, `mcp-servers/monte-carlo-mock/requirements.txt`, `mcp-servers/custom/Dockerfile`, `mcp-servers/custom/requirements.txt`, `ui/Dockerfile`
 
-- [ ] **GX** (`requirements.txt`): `fastmcp`, `great-expectations`, `pandas`, `fastapi`, `uvicorn`; Dockerfile: `python:3.11-slim`, `EXPOSE 8081`, CMD `python server.py`
-- [ ] **MC mock** (`requirements.txt`): `fastmcp`, `fastapi`, `uvicorn`; Dockerfile: `EXPOSE 8082`, CMD `python server.py`
-- [ ] **Custom** (`requirements.txt`): `fastmcp`, `fastapi`, `uvicorn`, `chromadb`, `httpx`; Dockerfile: `EXPOSE 8083`, CMD `python server.py`
-- [ ] **UI** (`ui/Dockerfile`): `pip install streamlit httpx`, `EXPOSE 8501`, CMD `streamlit run app.py --server.port=8501 --server.address=0.0.0.0`
+- [x] **GX** (`requirements.txt`): `fastmcp`, `great-expectations`, `pandas`, `fastapi`, `uvicorn`; Dockerfile: `python:3.11-slim`, `EXPOSE 8081`, CMD `python server.py`
+- [x] **MC mock** (`requirements.txt`): `fastmcp`, `fastapi`, `uvicorn`; Dockerfile: `EXPOSE 8082`, CMD `python server.py`
+- [x] **Custom** (`requirements.txt`): `fastmcp`, `fastapi`, `uvicorn`, `chromadb`, `httpx`; Dockerfile: `EXPOSE 8083`, CMD `python server.py`
+- [x] **UI** (`ui/Dockerfile`): `pip install streamlit httpx`, `EXPOSE 8501`, CMD `streamlit run app.py --server.port=8501 --server.address=0.0.0.0`
 
 **Verify:** Each image builds (even without `server.py` present, the requirements install step must succeed).
 
@@ -83,14 +83,14 @@
 
 **File:** `docker-compose.yml`
 
-- [ ] `version: "3.8"`
-- [ ] **`app`** service: build `.`, ports `8000:8000`, all env vars, volumes `./data:/data` and `./demo-data:/demo-data:ro`, depends_on chroma/mcp-gx/mcp-mc/mcp-custom with `condition: service_healthy`, healthcheck `curl -f http://localhost:8000/health`
-- [ ] **`chroma`** service: `image: chromadb/chroma:latest`, ports `8001:8000`, volume `./data/chroma:/chroma/chroma`, env `ANONYMIZED_TELEMETRY=false`, healthcheck `curl -f http://localhost:8000/api/v1/heartbeat`
-- [ ] **`mcp-gx`** service: build `./mcp-servers/great-expectations`, ports `8081:8081`, volume `./demo-data:/demo-data:ro`, env `GX_DATA_DIR=/demo-data`, healthcheck `curl -f http://localhost:8081/health`
-- [ ] **`mcp-mc`** service: build `./mcp-servers/monte-carlo-mock`, ports `8082:8082`, volume `./demo-data:/demo-data:ro`, healthcheck `curl -f http://localhost:8082/health`
-- [ ] **`mcp-custom`** service: build `./mcp-servers/custom`, ports `8083:8083`, env `CHROMA_HOST=chroma CHROMA_PORT=8000`, depends_on chroma healthy, healthcheck `curl -f http://localhost:8083/health`
-- [ ] **`demo-ui`** service: build `./ui`, ports `3000:8501`, env `API_URL=http://app:8000`, depends_on app healthy
-- [ ] `networks: default: name: demo-network`
+- [x] `version: "3.8"`
+- [x] **`app`** service: build `.`, ports `8000:8000`, all env vars, volumes `./data:/data` and `./demo-data:/demo-data:ro`, depends_on chroma/mcp-gx/mcp-mc/mcp-custom with `condition: service_healthy`, healthcheck `curl -f http://localhost:8000/health`
+- [x] **`chroma`** service: `image: chromadb/chroma:latest`, ports `8001:8000`, volume `./data/chroma:/chroma/chroma`, env `ANONYMIZED_TELEMETRY=false`, healthcheck `curl -f http://localhost:8000/api/v1/heartbeat`
+- [x] **`mcp-gx`** service: build `./mcp-servers/great-expectations`, ports `8081:8081`, volume `./demo-data:/demo-data:ro`, env `GX_DATA_DIR=/demo-data`, healthcheck `curl -f http://localhost:8081/health`
+- [x] **`mcp-mc`** service: build `./mcp-servers/monte-carlo-mock`, ports `8082:8082`, volume `./demo-data:/demo-data:ro`, healthcheck `curl -f http://localhost:8082/health`
+- [x] **`mcp-custom`** service: build `./mcp-servers/custom`, ports `8083:8083`, env `CHROMA_HOST=chroma CHROMA_PORT=8000`, depends_on chroma healthy, healthcheck `curl -f http://localhost:8083/health`
+- [x] **`demo-ui`** service: build `./ui`, ports `3000:8501`, env `API_URL=http://app:8000`, depends_on app healthy
+- [x] `networks: default: name: demo-network`
 
 **Verify (Phase 0 Gate):**
 ```bash
@@ -111,13 +111,13 @@ curl http://localhost:8001/api/v1/heartbeat
 
 **File:** `src/config.py`
 
-- [ ] `from dotenv import load_dotenv; load_dotenv()` at module top
-- [ ] All env var constants: `CHROMA_HOST`, `CHROMA_PORT`, `MCP_GX_URL`, `MCP_MC_URL`, `MCP_CUSTOM_URL`, `SQLITE_PATH`, `DECISIONS_DB_PATH`, `CHROMA_DATA_PATH`, `LOG_LEVEL`, `COST_TRACKING_ENABLED`, `COST_ALERT_THRESHOLD`, `MAX_REQUESTS_PER_MINUTE`, `MEMORY_RETENTION_DAYS`
-- [ ] `MODELS` dict with 4 entries: `tier1_reasoning` (gpt-4o, temp=0.1, max_tokens=4096, timeout=60), `tier2_structured` (gpt-4o-mini, temp=0.0, max_tokens=2048, timeout=30), `tier3_simple` (gpt-4o-mini, temp=0.0, max_tokens=1024, timeout=15), `embeddings` (text-embedding-3-large, dimensions=3072)
-- [ ] `PRICING` dict: `{"gpt-4o": {"input": 0.0025, "output": 0.010}, "gpt-4o-mini": {"input": 0.00015, "output": 0.0006}, "text-embedding-3-large": {"input": 0.00013, "output": 0.0}}`
-- [ ] `CostTracker` class: `__init__` sets `_session_cost=0.0`, `_investigation_costs={}`; `record(model, investigation_id, input_tokens, output_tokens) -> float`; `report() -> dict` with `session_total_usd`, `investigation_count`, `avg_per_investigation_usd`
-- [ ] `invoke_with_retry` async fn with `@retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=4, max=60), reraise=True)`
-- [ ] Module-level singleton: `cost_tracker = CostTracker()`
+- [x] `from dotenv import load_dotenv; load_dotenv()` at module top
+- [x] All env var constants: `CHROMA_HOST`, `CHROMA_PORT`, `MCP_GX_URL`, `MCP_MC_URL`, `MCP_CUSTOM_URL`, `SQLITE_PATH`, `DECISIONS_DB_PATH`, `CHROMA_DATA_PATH`, `LOG_LEVEL`, `COST_TRACKING_ENABLED`, `COST_ALERT_THRESHOLD`, `MAX_REQUESTS_PER_MINUTE`, `MEMORY_RETENTION_DAYS`
+- [x] `MODELS` dict with 4 entries: `tier1_reasoning` (gpt-4o, temp=0.1, max_tokens=4096, timeout=60), `tier2_structured` (gpt-4o-mini, temp=0.0, max_tokens=2048, timeout=30), `tier3_simple` (gpt-4o-mini, temp=0.0, max_tokens=1024, timeout=15), `embeddings` (text-embedding-3-large, dimensions=3072)
+- [x] `PRICING` dict: `{"gpt-4o": {"input": 0.0025, "output": 0.010}, "gpt-4o-mini": {"input": 0.00015, "output": 0.0006}, "text-embedding-3-large": {"input": 0.00013, "output": 0.0}}`
+- [x] `CostTracker` class: `__init__` sets `_session_cost=0.0`, `_investigation_costs={}`; `record(model, investigation_id, input_tokens, output_tokens) -> float`; `report() -> dict` with `session_total_usd`, `investigation_count`, `avg_per_investigation_usd`
+- [x] `invoke_with_retry` async fn with `@retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=4, max=60), reraise=True)`
+- [x] Module-level singleton: `cost_tracker = CostTracker()`
 
 **Verify:** `from src.config import MODELS, cost_tracker, invoke_with_retry` imports without error.
 
@@ -127,10 +127,10 @@ curl http://localhost:8001/api/v1/heartbeat
 
 **File:** `src/agents/workflow.py`
 
-- [ ] `DataQualityState` TypedDict — all 20 fields from SPEC §5.1: `investigation_id`, `triggered_at`, `trigger`, `validation_result`, `detection_result`, `diagnosis_result`, `lineage_result`, `business_impact`, `remediation_plan`, `remediation_result`, `current_phase`, `severity`, `should_auto_remediate`, `workflow_complete`, `errors`, `agent_latencies`
+- [x] `DataQualityState` TypedDict — all 20 fields from SPEC §5.1: `investigation_id`, `triggered_at`, `trigger`, `validation_result`, `detection_result`, `diagnosis_result`, `lineage_result`, `business_impact`, `remediation_plan`, `remediation_result`, `current_phase`, `severity`, `should_auto_remediate`, `workflow_complete`, `errors`, `agent_latencies`
   *(Note: `agent_latencies` is field 16; SPEC lists 20 fields total — count carefully)*
-- [ ] `WorkflowMemory` TypedDict — 6 fields: `investigation_id`, `started_at`, `shared_context`, `agent_messages`, `decisions`, `agent_latencies`
-- [ ] No `build_workflow()` yet — that is added in T-31 (Phase 3)
+- [x] `WorkflowMemory` TypedDict — 6 fields: `investigation_id`, `started_at`, `shared_context`, `agent_messages`, `decisions`, `agent_latencies`
+- [x] No `build_workflow()` yet — that is added in T-31 (Phase 3)
 
 **Verify:** `from src.agents.workflow import DataQualityState, WorkflowMemory` imports cleanly.
 
@@ -140,7 +140,7 @@ curl http://localhost:8001/api/v1/heartbeat
 
 **File:** `src/agents/orchestrator.py`
 
-- [ ] All 8 Pydantic v2 models from SPEC §5.4:
+- [x] All 8 Pydantic v2 models from SPEC §5.4:
   - `InvestigationTrigger` (5 fields)
   - `ValidationResult` (6 fields)
   - `DetectionResult` (10 fields including `similar_past_anomalies: List[dict]`)
@@ -149,7 +149,7 @@ curl http://localhost:8001/api/v1/heartbeat
   - `BusinessImpactResult` (7 fields)
   - `RemediationPlan` (8 fields)
   - `RemediationOutcome` (5 fields)
-- [ ] `route_from_orchestrator(state: DataQualityState) -> Literal["validation","diagnosis","business_impact","complete"]` — stub body `raise NotImplementedError` (replaced in T-30)
+- [x] `route_from_orchestrator(state: DataQualityState) -> Literal["validation","diagnosis","business_impact","complete"]` — stub body `raise NotImplementedError` (replaced in T-30)
 
 **Verify:** `from src.agents.orchestrator import InvestigationTrigger, RemediationPlan` and `t = InvestigationTrigger(dataset_id="x", table_name="t", alert_type="null_spike", description="test")` both succeed.
 
@@ -159,9 +159,9 @@ curl http://localhost:8001/api/v1/heartbeat
 
 **File:** `src/memory/short_term.py`
 
-- [ ] `create_checkpointer(sqlite_path: str) -> SqliteSaver`: calls `os.makedirs(os.path.dirname(sqlite_path), exist_ok=True)` then `SqliteSaver.from_conn_string(sqlite_path)`
-- [ ] `update_shared_context(state: dict, agent_name: str, findings_summary: str) -> dict`: returns `{"shared_context": {**state.get("shared_context", {}), agent_name: findings_summary}}`
-- [ ] `record_agent_latency(state: dict, agent_name: str, elapsed_ms: int) -> dict`: returns `{"agent_latencies": {**state.get("agent_latencies", {}), agent_name: elapsed_ms}}`
+- [x] `create_checkpointer(sqlite_path: str) -> SqliteSaver`: calls `os.makedirs(os.path.dirname(sqlite_path), exist_ok=True)` then `SqliteSaver.from_conn_string(sqlite_path)`
+- [x] `update_shared_context(state: dict, agent_name: str, findings_summary: str) -> dict`: returns `{"shared_context": {**state.get("shared_context", {}), agent_name: findings_summary}}`
+- [x] `record_agent_latency(state: dict, agent_name: str, elapsed_ms: int) -> dict`: returns `{"agent_latencies": {**state.get("agent_latencies", {}), agent_name: elapsed_ms}}`
 
 **Verify:** `from src.memory.short_term import create_checkpointer` imports; calling `create_checkpointer("/tmp/test/ckpt.db")` creates the parent directory and returns a `SqliteSaver` instance.
 
@@ -171,12 +171,12 @@ curl http://localhost:8001/api/v1/heartbeat
 
 **File:** `src/memory/long_term.py`
 
-- [ ] `AgentDecision` dataclass with 9 fields: `decision_id`, `investigation_id`, `agent_name`, `decision_type`, `input_summary`, `output_summary`, `confidence`, `was_correct: Optional[bool]`, `created_at: datetime`
-- [ ] `LongTermMemory.__init__(db_path: str, rag_retriever=None)`: calls `os.makedirs` guard, opens SQLite connection with `check_same_thread=False`, creates `agent_decisions` table and 2 indexes (DDL from SPEC §9.2)
-- [ ] `record_decision(decision: AgentDecision) -> None`: INSERT into `agent_decisions`
-- [ ] `get_similar_decisions(agent_name, decision_type, input_description, k=5) -> List[dict]`: returns `[]` if `self.rag_retriever is None`; otherwise SQL filter by `agent_name`+`decision_type` then RAG semantic search on `input_description`
-- [ ] `record_feedback(investigation_id, was_resolved: bool, resolution_notes: str) -> int`: UPDATE `was_correct` for all decisions with matching `investigation_id`; returns row count
-- [ ] `cleanup_old_memory(days_to_keep: int = 90) -> int`: DELETE decisions older than cutoff where `was_correct != 1`; returns row count
+- [x] `AgentDecision` dataclass with 9 fields: `decision_id`, `investigation_id`, `agent_name`, `decision_type`, `input_summary`, `output_summary`, `confidence`, `was_correct: Optional[bool]`, `created_at: datetime`
+- [x] `LongTermMemory.__init__(db_path: str, rag_retriever=None)`: calls `os.makedirs` guard, opens SQLite connection with `check_same_thread=False`, creates `agent_decisions` table and 2 indexes (DDL from SPEC §9.2)
+- [x] `record_decision(decision: AgentDecision) -> None`: INSERT into `agent_decisions`
+- [x] `get_similar_decisions(agent_name, decision_type, input_description, k=5) -> List[dict]`: returns `[]` if `self.rag_retriever is None`; otherwise SQL filter by `agent_name`+`decision_type` then RAG semantic search on `input_description`
+- [x] `record_feedback(investigation_id, was_resolved: bool, resolution_notes: str) -> int`: UPDATE `was_correct` for all decisions with matching `investigation_id`; returns row count
+- [x] `cleanup_old_memory(days_to_keep: int = 90) -> int`: DELETE decisions older than cutoff where `was_correct != 1`; returns row count
 
 **Verify (Phase 1 Gate):**
 ```bash

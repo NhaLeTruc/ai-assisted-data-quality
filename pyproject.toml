@@ -32,6 +32,7 @@ skip-magic-trailing-comma = false
 
 [tool.deptry]
 ignore = ["DEP002"]
+package_module_name_map = { "python-dotenv" = "dotenv" }
 exclude = [
     "scripts/",
     "tests/",
