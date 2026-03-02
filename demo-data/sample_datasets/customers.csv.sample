@@ -1,0 +1,13 @@
+# SAMPLE FILE — for schema reference only.
+# The full customers.csv (5,000 rows) is gitignored. Generate it with:
+#   python scripts/generate_demo_data.py
+#
+# Schema: customer_id (UUID4), first_name, last_name, email, phone, country, created_at
+# phone intentional schema drift: 60% = 10-char numeric (e.g. 5551234567),
+#                                  40% = 15-char international (e.g. +15551234567890)
+customer_id,first_name,last_name,email,phone,country,created_at
+bd9c66b3-ad3c-2d6d-1a3d-1fa7bc8960a9,Bob,Smith,bob.smith0@example.com,+14501958682846,CA,2024-07-06
+8fadc1a6-06cb-0fb3-9a1d-e644815ef6d1,Grace,Smith,grace.smith1@yahoo.com,4234903402,JP,2025-07-20
+47229389-571a-a876-6c30-7511b2b9437a,Hank,Anderson,hank.anderson2@yahoo.com,2063678638,DE,2025-03-23
+0b1f9163-ce9f-f57f-43b7-a3a69a8dca03,Bob,Jones,bob.jones3@hotmail.com,5676770619,CA,2025-02-08
+11ce5dd2-b45e-d1f0-3139-d32c93cd59bf,Bob,Taylor,bob.taylor4@gmail.com,8437067228,DE,2025-05-10

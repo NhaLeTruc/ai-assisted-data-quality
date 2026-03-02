@@ -1,0 +1,13 @@
+# SAMPLE FILE — for schema reference only.
+# The full products.csv (1,000 rows) is gitignored. Generate it with:
+#   python scripts/generate_demo_data.py
+#
+# Schema: product_id (UUID4), name, category, price (2dp float),
+#         inventory_count (int), last_updated (ISO date)
+# Clean reference data — no nulls, no defects.
+product_id,name,category,price,inventory_count,last_updated
+72e7411a-3a0a-0594-af3d-a3bf6577abcc,Essential Item 0001,Food,572.85,9511,2026-02-18
+4a13cc53-2dff-bfa1-7057-1aa69a641dd7,Pro Set 0002,Home,664.42,1607,2026-01-31
+039e20df-c748-d457-4c72-12a88fcb515b,Pro Unit 0003,Food,789.89,7823,2026-02-06
+e3631abc-13ae-53ab-1d04-f208c22fe648,Deluxe Item 0004,Electronics,372.76,6941,2026-02-09
+477302f6-7d10-1990-50ac-b48a353e5de4,Premium Gadget 0005,Beauty,164.88,8524,2026-02-13

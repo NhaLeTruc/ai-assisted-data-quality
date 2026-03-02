@@ -1,0 +1,13 @@
+# SAMPLE FILE — for schema reference only.
+# The full orders.csv (10,000 rows) is gitignored. Generate it with:
+#   python scripts/generate_demo_data.py
+#
+# Schema: order_id (UUID4), customer_id (UUID4 — 500 rows intentionally null),
+#         product_id (UUID4), order_date (ISO date), amount (2dp float),
+#         status (shipped|delivered|pending|processing|cancelled), region (US|EU|APAC|LATAM)
+order_id,customer_id,product_id,order_date,amount,status,region
+7e8f8095-624c-69b6-b244-45a7b7e58481,31c681ec-935f-2b0a-a138-4ddce2d9de5d,a7f36ae9-25c7-3c44-3e75-c3b4664fa663,2025-12-04,27.73,cancelled,LATAM
+f53d4330-cdda-24ba-2d06-e8cf3805f907,6cd66193-c746-8f59-1b49-4e15e2add909,0cdb1ca4-76ec-bdd6-8498-e113b227462c,2025-12-21,1246.00,shipped,EU
+986f9025-8f15-ba58-fce6-850487f8424d,aae65fc1-76f2-dbfe-cd29-a36f222282e1,e4347d51-c158-1092-f335-cba3513a7052,2026-01-05,3063.27,processing,EU
+be6033f7-28be-9288-e5af-6e39722764e6,8c41561b-e827-a1b9-d4a0-2e536d3ee1dc,425a609f-7337-c599-7984-4388dc8aee30,2026-01-30,4199.32,delivered,LATAM
+e7a37e81-63b4-c08b-6b8e-869fd5385b0e,,b20dcb6e-f231-1f17-9586-3a76c51155ff,2026-02-28,4283.66,cancelled,APAC

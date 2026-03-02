@@ -10,3 +10,4 @@ __pycache__/
 gx/
 great_expectations/uncommitted/
 .venv/
+demo-data/sample_datasets/*.csv
