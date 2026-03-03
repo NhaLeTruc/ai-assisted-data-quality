@@ -301,11 +301,11 @@ curl http://localhost:8083/health
 
 **File:** `src/rag/indexer.py`
 
-- [ ] `DataQualityIndexer.__init__(chroma_host: str, chroma_port: int)`: creates `chromadb.HttpClient`, instantiates `OpenAIEmbedding(model="text-embedding-3-large")`, instantiates `SemanticSplitterNodeParser(buffer_size=1, breakpoint_percentile_threshold=95, embed_model=self.embed_model)`
-- [ ] `lists_to_strings(metadata: dict) -> dict`: converts any `list` value to `", ".join(str(x) for x in v)` — enforces Chroma's no-list-metadata constraint
-- [ ] `index_documents(collection_name: str, documents: list) -> int`: gets-or-creates Chroma collection, iterates documents (each has `"id"`, `"content"`, `"metadata"`), runs content through `SemanticSplitterNodeParser`, calls `lists_to_strings` on metadata, upserts to Chroma; returns count of documents indexed
-- [ ] `upsert_document(collection_name: str, doc_id: str, content: str, metadata: dict) -> None`: single-document upsert using `collection.upsert()`
-- [ ] `get_collection_stats() -> dict`: returns `{name: collection.count()}` for all 4 collections: `anomaly_patterns`, `dq_rules`, `remediation_playbooks`, `business_context`
+- [x] `DataQualityIndexer.__init__(chroma_host: str, chroma_port: int)`: creates `chromadb.HttpClient`, instantiates `OpenAIEmbedding(model="text-embedding-3-large")`, instantiates `SemanticSplitterNodeParser(buffer_size=1, breakpoint_percentile_threshold=95, embed_model=self.embed_model)`
+- [x] `lists_to_strings(metadata: dict) -> dict`: converts any `list` value to `", ".join(str(x) for x in v)` — enforces Chroma's no-list-metadata constraint
+- [x] `index_documents(collection_name: str, documents: list) -> int`: gets-or-creates Chroma collection, iterates documents (each has `"id"`, `"content"`, `"metadata"`), runs content through `SemanticSplitterNodeParser`, calls `lists_to_strings` on metadata, upserts to Chroma; returns count of documents indexed
+- [x] `upsert_document(collection_name: str, doc_id: str, content: str, metadata: dict) -> None`: single-document upsert using `collection.upsert()`
+- [x] `get_collection_stats() -> dict`: returns `{name: collection.count()}` for all 4 collections: `anomaly_patterns`, `dq_rules`, `remediation_playbooks`, `business_context`
 
 **Verify:** `from src.rag.indexer import DataQualityIndexer` imports; instantiating with `localhost:8001` (Chroma running) succeeds.
 
@@ -315,13 +315,13 @@ curl http://localhost:8083/health
 
 **File:** `src/rag/retriever.py`
 
-- [ ] `DataQualityRetriever.__init__(chroma_host, chroma_port, embeddings)`: stores params; sets `self._retrievers = {}` (lazy-init dict); stores embeddings model
-- [ ] `_build_retriever(collection_name: str)` (private): loads all docs from Chroma collection (`collection.get(include=["documents","metadatas"])`), builds `BM25Retriever.from_documents(docs)`, builds `Chroma` LangChain wrapper + vector retriever, builds `EnsembleRetriever([vector, bm25], weights=[0.7, 0.3])`, wraps in `ContextualCompressionRetriever(CrossEncoderReranker(HuggingFaceCrossEncoder("cross-encoder/ms-marco-MiniLM-L-6-v2"), top_n=5))`, caches in `self._retrievers[collection_name]`
-- [ ] `_get_retriever(collection_name: str)`: returns cached or calls `_build_retriever` — **lazy initialization, not called at startup**
-- [ ] `retrieve_similar_anomalies(query, anomaly_type=None, severity=None, days_lookback=90) -> List[Document]`: uses `anomaly_patterns` retriever; passes `where` filter if `anomaly_type` or `severity` provided
-- [ ] `retrieve_playbook(query, anomaly_type) -> List[Document]`: uses `remediation_playbooks` retriever; filter by `applicable_anomaly_types` containing `anomaly_type`
-- [ ] `retrieve_business_context(table_name) -> List[Document]`: uses `business_context` retriever; filter `{"table_name": table_name}`
-- [ ] `retrieve_dq_rules(table_name, rule_type=None) -> List[Document]`: uses `dq_rules` retriever; filter by `applies_to` matching `table_name` or `"*"`
+- [x] `DataQualityRetriever.__init__(chroma_host, chroma_port, embeddings)`: stores params; sets `self._retrievers = {}` (lazy-init dict); stores embeddings model
+- [x] `_build_retriever(collection_name: str)` (private): loads all docs from Chroma collection (`collection.get(include=["documents","metadatas"])`), builds `BM25Retriever.from_documents(docs)`, builds `Chroma` LangChain wrapper + vector retriever, builds `EnsembleRetriever([vector, bm25], weights=[0.7, 0.3])`, wraps in `ContextualCompressionRetriever(CrossEncoderReranker(HuggingFaceCrossEncoder("cross-encoder/ms-marco-MiniLM-L-6-v2"), top_n=5))`, caches in `self._retrievers[collection_name]`
+- [x] `_get_retriever(collection_name: str)`: returns cached or calls `_build_retriever` — **lazy initialization, not called at startup**
+- [x] `retrieve_similar_anomalies(query, anomaly_type=None, severity=None, days_lookback=90) -> List[Document]`: uses `anomaly_patterns` retriever; passes `where` filter if `anomaly_type` or `severity` provided
+- [x] `retrieve_playbook(query, anomaly_type) -> List[Document]`: uses `remediation_playbooks` retriever; filter by `applicable_anomaly_types` containing `anomaly_type`
+- [x] `retrieve_business_context(table_name) -> List[Document]`: uses `business_context` retriever; filter `{"table_name": table_name}`
+- [x] `retrieve_dq_rules(table_name, rule_type=None) -> List[Document]`: uses `dq_rules` retriever; filter by `applies_to` matching `table_name` or `"*"`
 
 **Verify:** After seeding, `r.retrieve_similar_anomalies("null values in customer_id column", anomaly_type="null_spike")` returns at least 1 document.
 
@@ -331,7 +331,7 @@ curl http://localhost:8083/health
 
 **Files:** `scripts/seed_demo_data.py`, `scripts/reset_demo.sh`
 
-- [ ] **`seed_demo_data.py`** — 8 sequential steps:
+- [x] **`seed_demo_data.py`** — 8 sequential steps:
   1. Connect to Chroma via `CHROMA_HOST`/`CHROMA_PORT` env vars
   2. Delete and recreate all 4 collections (ensures clean slate on re-seed)
   3. Load + index `demo-data/seed_data/anomalies.json` → `anomaly_patterns`
@@ -340,7 +340,7 @@ curl http://localhost:8083/health
   6. Programmatically generate ≥10 DQ rules (one per expectation type per key table) → index into `dq_rules`
   7. Print collection document counts
   8. `sys.exit(0)` on success, `sys.exit(1)` on any exception
-- [ ] **`reset_demo.sh`** — `#!/bin/bash`, `set -e`, sequence: `docker compose down`, `rm -rf ./data/chroma/* ./data/sqlite/*`, `docker compose up -d`, `sleep 30`, `docker compose exec app python scripts/seed_demo_data.py`; `chmod +x scripts/reset_demo.sh`
+- [x] **`reset_demo.sh`** — `#!/bin/bash`, `set -e`, sequence: `docker compose down`, `rm -rf ./data/chroma/* ./data/sqlite/*`, `docker compose up -d`, `sleep 30`, `docker compose exec app python scripts/seed_demo_data.py`; `chmod +x scripts/reset_demo.sh`
 
 **Verify (Phase 2 Gate):**
 ```bash
