@@ -244,13 +244,13 @@ print('Phase 1 imports OK')
 
 **File:** `mcp-servers/great-expectations/server.py`
 
-- [ ] FastAPI app wrapping FastMCP; MCP mounted at `/mcp`; `GET /health` → `{"status":"ok","server":"great-expectations"}`
-- [ ] GX FileSystem context initialized at module startup using `GX_DATA_DIR` env var
-- [ ] `load_dataset(dataset_id: str, file_path: str) -> dict`: loads CSV from `GX_DATA_DIR/file_path`; returns `{"dataset_id", "row_count", "columns", "loaded": True}`
-- [ ] `create_expectation_suite(dataset_id: str, suite_name: str, auto_generate: bool = True) -> dict`: creates `{dataset_id}_suite`; uses GX Onboarding DataAssistant for auto-generation; returns `{"suite_name", "expectation_count", "created": True}`
-- [ ] `run_checkpoint(dataset_id: str, suite_name: str) -> dict`: runs GX validation; returns `{"success": bool, "result_url": str, "statistics": {"evaluated", "successful", "unsuccessful"}}`
-- [ ] `get_validation_results(dataset_id: str, suite_name: str) -> dict`: returns full GX result including `"failed_expectations": [str]`
-- [ ] All tool functions return plain `dict`, not Pydantic models
+- [x] FastAPI app wrapping FastMCP; MCP mounted at `/mcp`; `GET /health` → `{"status":"ok","server":"great-expectations"}`
+- [x] GX FileSystem context initialized at module startup using `GX_DATA_DIR` env var
+- [x] `load_dataset(dataset_id: str, file_path: str) -> dict`: loads CSV from `GX_DATA_DIR/file_path`; returns `{"dataset_id", "row_count", "columns", "loaded": True}`
+- [x] `create_expectation_suite(dataset_id: str, suite_name: str, auto_generate: bool = True) -> dict`: creates `{dataset_id}_suite`; uses GX Onboarding DataAssistant for auto-generation; returns `{"suite_name", "expectation_count", "created": True}`
+- [x] `run_checkpoint(dataset_id: str, suite_name: str) -> dict`: runs GX validation; returns `{"success": bool, "result_url": str, "statistics": {"evaluated", "successful", "unsuccessful"}}`
+- [x] `get_validation_results(dataset_id: str, suite_name: str) -> dict`: returns full GX result including `"failed_expectations": [str]`
+- [x] All tool functions return plain `dict`, not Pydantic models
 
 **Verify:** `docker compose up -d mcp-gx && curl http://localhost:8081/health` → `{"status":"ok","server":"great-expectations"}`.
 
@@ -260,12 +260,12 @@ print('Phase 1 imports OK')
 
 **File:** `mcp-servers/monte-carlo-mock/server.py`
 
-- [ ] FastAPI app wrapping FastMCP; `GET /health` → `{"status":"ok","server":"monte-carlo-mock"}`
-- [ ] Loads `DEMO_DATA_DIR/seed_data/anomalies.json` at startup for deterministic responses
-- [ ] `get_table_health(table_name: str) -> dict`: for `orders` returns `{"table":"orders","freshness_hours":1.2,"row_count":10000,"volume_change_pct":-0.2,"status":"degraded"}`; all other tables return healthy baseline
-- [ ] `get_anomalies(table_name: str, hours_lookback: int = 24) -> list`: for `orders` returns `[{"anomaly_id":"DQ-2026-0001","type":"null_spike","severity":"critical","detected_at":"<now-1h>","metric":0.05,"baseline":0.001}]`; empty list for unknown tables
-- [ ] `get_lineage(table_name: str, depth: int = 2) -> dict`: returns `{"upstream":[...],"downstream":[...],"graph":{}}`
-- [ ] `query_catalog(search_term: str, limit: int = 10) -> list`: returns matching entries from a hardcoded catalog
+- [x] FastAPI app wrapping FastMCP; `GET /health` → `{"status":"ok","server":"monte-carlo-mock"}`
+- [x] Loads `DEMO_DATA_DIR/seed_data/anomalies.json` at startup for deterministic responses
+- [x] `get_table_health(table_name: str) -> dict`: for `orders` returns `{"table":"orders","freshness_hours":1.2,"row_count":10000,"volume_change_pct":-0.2,"status":"degraded"}`; all other tables return healthy baseline
+- [x] `get_anomalies(table_name: str, hours_lookback: int = 24) -> list`: for `orders` returns `[{"anomaly_id":"DQ-2026-0001","type":"null_spike","severity":"critical","detected_at":"<now-1h>","metric":0.05,"baseline":0.001}]`; empty list for unknown tables
+- [x] `get_lineage(table_name: str, depth: int = 2) -> dict`: returns `{"upstream":[...],"downstream":[...],"graph":{}}`
+- [x] `query_catalog(search_term: str, limit: int = 10) -> list`: returns matching entries from a hardcoded catalog
 
 **Verify:** `docker compose up -d mcp-mc && curl http://localhost:8082/health` → `{"status":"ok","server":"monte-carlo-mock"}`.
 
@@ -275,12 +275,12 @@ print('Phase 1 imports OK')
 
 **File:** `mcp-servers/custom/server.py`
 
-- [ ] FastAPI app wrapping FastMCP; `GET /health` → `{"status":"ok","server":"custom-tools"}`
-- [ ] `chromadb.HttpClient(host=CHROMA_HOST, port=CHROMA_PORT)` initialized at startup
-- [ ] `analyze_data_lineage(table_name: str, depth: int = 3) -> dict`: for `orders` returns `{"table":"orders","upstream":["api_gateway","user_service"],"downstream":["revenue_report","customer_segment_model","marketing_pipeline","finance_dashboard"],"impact_radius":7,"critical_consumers":["revenue_report"]}`; other tables return shallow mock lineage
-- [ ] `assess_business_impact(table_name: str, anomaly_type: str, severity: str) -> dict`: returns `{"affected_slas":[...],"teams":[...],"estimated_delay_hours":float,"escalation_required":bool}` sourced from business context data
-- [ ] `apply_remediation(anomaly_id: str, action: str, dry_run: bool = True) -> dict`: **default `dry_run=True` always**; dry run returns `{"status":"dry_run","action":action,"records_affected":500,"rollback_available":True}`; non-dry-run returns `{"status":"applied",...}`
-- [ ] `get_similar_anomalies(description: str, anomaly_type: str, limit: int = 5) -> list`: calls `chroma_client.get_collection("anomaly_patterns").query(query_texts=[description], n_results=limit)`; returns `[{"anomaly_id","similarity","resolution","resolution_time_hours"}]`
+- [x] FastAPI app wrapping FastMCP; `GET /health` → `{"status":"ok","server":"custom-tools"}`
+- [x] `chromadb.HttpClient(host=CHROMA_HOST, port=CHROMA_PORT)` initialized at startup
+- [x] `analyze_data_lineage(table_name: str, depth: int = 3) -> dict`: for `orders` returns `{"table":"orders","upstream":["api_gateway","user_service"],"downstream":["revenue_report","customer_segment_model","marketing_pipeline","finance_dashboard"],"impact_radius":7,"critical_consumers":["revenue_report"]}`; other tables return shallow mock lineage
+- [x] `assess_business_impact(table_name: str, anomaly_type: str, severity: str) -> dict`: returns `{"affected_slas":[...],"teams":[...],"estimated_delay_hours":float,"escalation_required":bool}` sourced from business context data
+- [x] `apply_remediation(anomaly_id: str, action: str, dry_run: bool = True) -> dict`: **default `dry_run=True` always**; dry run returns `{"status":"dry_run","action":action,"records_affected":500,"rollback_available":True}`; non-dry-run returns `{"status":"applied",...}`
+- [x] `get_similar_anomalies(description: str, anomaly_type: str, limit: int = 5) -> list`: calls `chroma_client.get_collection("anomaly_patterns").query(query_texts=[description], n_results=limit)`; returns `[{"anomaly_id","similarity","resolution","resolution_time_hours"}]`
 
 **Verify (Phase 2B Gate):**
 ```bash
