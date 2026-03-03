@@ -360,8 +360,8 @@ OPENAI_API_KEY=sk-... CHROMA_HOST=localhost CHROMA_PORT=8001 \
 
 **File:** `src/agents/orchestrator.py` (extends T-12)
 
-- [ ] Add `orchestrator_node(state: DataQualityState) -> dict` async function: queries `business_context` RAG for the table being investigated; logs phase transition; returns `{}` (state is managed by phase fields set by other agents — orchestrator is primarily a routing node)
-- [ ] Replace `route_from_orchestrator` stub with full implementation:
+- [x] Add `orchestrator_node(state: DataQualityState) -> dict` async function: queries `business_context` RAG for the table being investigated; logs phase transition; returns `{}` (state is managed by phase fields set by other agents — orchestrator is primarily a routing node)
+- [x] Replace `route_from_orchestrator` stub with full implementation:
   ```python
   def route_from_orchestrator(state):
       phase = state["current_phase"]
@@ -372,8 +372,8 @@ OPENAI_API_KEY=sk-... CHROMA_HOST=localhost CHROMA_PORT=8001 \
           return "business_impact" if state.get("severity") in ("critical","high") else "complete"
       return "complete"
   ```
-- [ ] Add `safe_agent_node(agent_fn)` wrapper function (PLAN §Phase 3); import `time`, `logging`, `functools.wraps`
-- [ ] Add module-level MCP toolkit initialization (PLAN §Phase 3): `mcp_toolkit`, `gx_tools`, `mc_tools`, `custom_tools`
+- [x] Add `safe_agent_node(agent_fn)` wrapper function (PLAN §Phase 3); import `time`, `logging`, `functools.wraps`
+- [x] Add module-level MCP toolkit initialization (PLAN §Phase 3): `mcp_toolkit`, `gx_tools`, `mc_tools`, `custom_tools`
 
 **Verify:** `from src.agents.orchestrator import route_from_orchestrator, safe_agent_node, orchestrator_node` imports; calling `route_from_orchestrator({"current_phase":"initial"})` returns `"validation"`.
 
@@ -383,10 +383,10 @@ OPENAI_API_KEY=sk-... CHROMA_HOST=localhost CHROMA_PORT=8001 \
 
 **File:** `src/agents/workflow.py` (extends T-11)
 
-- [ ] Add imports: `StateGraph`, `END` from `langgraph.graph`; `SqliteSaver` from `langgraph.checkpoint.sqlite`; all 7 agent node functions
-- [ ] `build_workflow(sqlite_path: str) -> CompiledGraph`: creates `SqliteSaver`, builds full `StateGraph(DataQualityState)`, registers all 7 nodes with `safe_agent_node`, sets entry point, adds all conditional and fixed edges, returns `graph.compile(checkpointer=memory)`
-- [ ] Graph edges exactly as in PLAN §Phase 3: `validation→detection→orchestrator`, `diagnosis→lineage→orchestrator`, `business_impact→repair→orchestrator`
-- [ ] Conditional edge mapping is exhaustive: `{"validation","diagnosis","business_impact","complete":END}`
+- [x] Add imports: `StateGraph`, `END` from `langgraph.graph`; `SqliteSaver` from `langgraph.checkpoint.sqlite`; all 7 agent node functions
+- [x] `build_workflow(sqlite_path: str) -> CompiledGraph`: creates `SqliteSaver`, builds full `StateGraph(DataQualityState)`, registers all 7 nodes with `safe_agent_node`, sets entry point, adds all conditional and fixed edges, returns `graph.compile(checkpointer=memory)`
+- [x] Graph edges exactly as in PLAN §Phase 3: `validation→detection→orchestrator`, `diagnosis→lineage→orchestrator`, `business_impact→repair→orchestrator`
+- [x] Conditional edge mapping is exhaustive: `{"validation","diagnosis","business_impact","complete":END}`
 
 **Verify:**
 ```bash
@@ -405,13 +405,13 @@ print(app.get_graph().draw_mermaid())
 
 **File:** `src/agents/validation.py`
 
-- [ ] Uses `MODELS["tier3_simple"]` (gpt-4o-mini)
-- [ ] Retrieves `dq_rules` from RAG for the trigger's `table_name`
-- [ ] Gets past decisions from `long_term_memory.get_similar_decisions("validation_agent", "validation", description)`
-- [ ] Calls MCP tools in sequence: `create_expectation_suite(dataset_id, f"{dataset_id}_suite")` → `run_checkpoint(dataset_id, suite_name)` → `get_validation_results(dataset_id, suite_name)`
-- [ ] LLM synthesizes GX results + RAG rules → emits `ValidationResult` via `PydanticOutputParser`
-- [ ] Records `AgentDecision` in `long_term_memory`
-- [ ] Returns `{"validation_result": result.model_dump()}`; does **not** set `current_phase`
+- [x] Uses `MODELS["tier3_simple"]` (gpt-4o-mini)
+- [x] Retrieves `dq_rules` from RAG for the trigger's `table_name`
+- [x] Gets past decisions from `long_term_memory.get_similar_decisions("validation_agent", "validation", description)`
+- [x] Calls MCP tools in sequence: `create_expectation_suite(dataset_id, f"{dataset_id}_suite")` → `run_checkpoint(dataset_id, suite_name)` → `get_validation_results(dataset_id, suite_name)`
+- [x] LLM synthesizes GX results + RAG rules → emits `ValidationResult` via `PydanticOutputParser`
+- [x] Records `AgentDecision` in `long_term_memory`
+- [x] Returns `{"validation_result": result.model_dump()}`; does **not** set `current_phase`
 
 **Verify:** Smoke test with mock state and running MCP server returns a dict with `"validation_result"` key.
 
@@ -421,13 +421,13 @@ print(app.get_graph().draw_mermaid())
 
 **File:** `src/agents/detection.py`
 
-- [ ] Uses `MODELS["tier2_structured"]` (gpt-4o-mini)
-- [ ] Calls MCP: `get_table_health(table_name)` then `get_anomalies(table_name, 24)`
-- [ ] Queries `anomaly_patterns` RAG: `retrieve_similar_anomalies(description, anomaly_type=trigger["alert_type"])`; stores top 3 as `similar_past_anomalies` in `DetectionResult`
-- [ ] LLM synthesizes validation result + MC anomalies + RAG matches → emits `DetectionResult`
-- [ ] Sets initial `severity` from anomaly type if anomaly detected
-- [ ] Returns `{"detection_result": result.model_dump(), "current_phase": "detection_complete", "severity": ...}`
-- [ ] Records `AgentDecision`
+- [x] Uses `MODELS["tier2_structured"]` (gpt-4o-mini)
+- [x] Calls MCP: `get_table_health(table_name)` then `get_anomalies(table_name, 24)`
+- [x] Queries `anomaly_patterns` RAG: `retrieve_similar_anomalies(description, anomaly_type=trigger["alert_type"])`; stores top 3 as `similar_past_anomalies` in `DetectionResult`
+- [x] LLM synthesizes validation result + MC anomalies + RAG matches → emits `DetectionResult`
+- [x] Sets initial `severity` from anomaly type if anomaly detected
+- [x] Returns `{"detection_result": result.model_dump(), "current_phase": "detection_complete", "severity": ...}`
+- [x] Records `AgentDecision`
 
 **Verify:** Returns dict with `"detection_result"` and `"current_phase": "detection_complete"`.
 
@@ -437,14 +437,14 @@ print(app.get_graph().draw_mermaid())
 
 **File:** `src/agents/diagnosis.py`
 
-- [ ] Uses `MODELS["tier1_reasoning"]` (gpt-4o)
-- [ ] Calls MCP: `get_anomalies(table_name, 48)` for extended lookback
-- [ ] Queries RAG: `retrieve_similar_anomalies(description)` and `retrieve_playbook(description, anomaly_type)`
-- [ ] Prompt includes full `validation_result`, `detection_result`, similar historical anomalies with root causes
-- [ ] LLM emits `DiagnosisResult` with `severity`, `root_cause`, `root_cause_category`, `confidence`
-- [ ] Does **not** set `current_phase` (Lineage agent does)
-- [ ] Returns `{"diagnosis_result": result.model_dump()}`
-- [ ] Records `AgentDecision`
+- [x] Uses `MODELS["tier1_reasoning"]` (gpt-4o)
+- [x] Calls MCP: `get_anomalies(table_name, 48)` for extended lookback
+- [x] Queries RAG: `retrieve_similar_anomalies(description)` and `retrieve_playbook(description, anomaly_type)`
+- [x] Prompt includes full `validation_result`, `detection_result`, similar historical anomalies with root causes
+- [x] LLM emits `DiagnosisResult` with `severity`, `root_cause`, `root_cause_category`, `confidence`
+- [x] Does **not** set `current_phase` (Lineage agent does)
+- [x] Returns `{"diagnosis_result": result.model_dump()}`
+- [x] Records `AgentDecision`
 
 **Verify:** Returns dict with `"diagnosis_result"` key containing a `severity` field.
 
@@ -454,13 +454,13 @@ print(app.get_graph().draw_mermaid())
 
 **File:** `src/agents/lineage.py`
 
-- [ ] Uses `MODELS["tier2_structured"]` (gpt-4o-mini)
-- [ ] Calls MCP: `analyze_data_lineage(table_name, depth=3)`
-- [ ] Queries RAG: `retrieve_business_context(table_name)`
-- [ ] LLM synthesizes lineage graph + business context → emits `LineageResult`
-- [ ] Sets `current_phase = "diagnosis_complete"` and propagates `severity` from `diagnosis_result["severity"]` (overrides detection's placeholder)
-- [ ] Returns `{"lineage_result": result.model_dump(), "current_phase": "diagnosis_complete", "severity": diagnosis_severity}`
-- [ ] Records `AgentDecision`
+- [x] Uses `MODELS["tier2_structured"]` (gpt-4o-mini)
+- [x] Calls MCP: `analyze_data_lineage(table_name, depth=3)`
+- [x] Queries RAG: `retrieve_business_context(table_name)`
+- [x] LLM synthesizes lineage graph + business context → emits `LineageResult`
+- [x] Sets `current_phase = "diagnosis_complete"` and propagates `severity` from `diagnosis_result["severity"]` (overrides detection's placeholder)
+- [x] Returns `{"lineage_result": result.model_dump(), "current_phase": "diagnosis_complete", "severity": diagnosis_severity}`
+- [x] Records `AgentDecision`
 
 **Verify:** Returns dict with `"lineage_result"` and `"current_phase": "diagnosis_complete"`.
 
@@ -470,14 +470,14 @@ print(app.get_graph().draw_mermaid())
 
 **File:** `src/agents/business_impact.py`
 
-- [ ] Uses `MODELS["tier1_reasoning"]` (gpt-4o)
-- [ ] Calls MCP: `assess_business_impact(table_name, anomaly_type, severity)`
-- [ ] Queries RAG: `retrieve_business_context(table_name)`
-- [ ] Prompt includes lineage result (downstream tables) + business context + SLA data
-- [ ] LLM emits `BusinessImpactResult` with `affected_slas`, `business_criticality`, `escalation_required`
-- [ ] Does **not** set `current_phase`
-- [ ] Returns `{"business_impact": result.model_dump()}`
-- [ ] Records `AgentDecision`
+- [x] Uses `MODELS["tier1_reasoning"]` (gpt-4o)
+- [x] Calls MCP: `assess_business_impact(table_name, anomaly_type, severity)`
+- [x] Queries RAG: `retrieve_business_context(table_name)`
+- [x] Prompt includes lineage result (downstream tables) + business context + SLA data
+- [x] LLM emits `BusinessImpactResult` with `affected_slas`, `business_criticality`, `escalation_required`
+- [x] Does **not** set `current_phase`
+- [x] Returns `{"business_impact": result.model_dump()}`
+- [x] Records `AgentDecision`
 
 **Verify:** Returns dict with `"business_impact"` key containing `escalation_required` bool.
 
@@ -487,14 +487,14 @@ print(app.get_graph().draw_mermaid())
 
 **File:** `src/agents/repair.py`
 
-- [ ] Uses `MODELS["tier2_structured"]` (gpt-4o-mini)
-- [ ] Calls MCP: `get_similar_anomalies(description, anomaly_type, limit=3)` then `apply_remediation(anomaly_id, recommended_action, dry_run=True)` *(only `dry_run=False` when `state["should_auto_remediate"] and risk_level == "low"` — demo always uses True)*
-- [ ] Queries RAG: `retrieve_playbook(description, anomaly_type)`
-- [ ] LLM synthesizes matched playbook + similar resolutions → emits `RemediationPlan`; `playbook_reference` field populated from RAG match
-- [ ] Calls `apply_remediation` with the plan's `action_type`; parses response into `RemediationOutcome`
-- [ ] Sets `current_phase = "remediation_complete"` and `workflow_complete = True`
-- [ ] Returns `{"remediation_plan": plan.model_dump(), "remediation_result": outcome.model_dump(), "current_phase": "remediation_complete", "workflow_complete": True}`
-- [ ] Records `AgentDecision` for both plan and outcome
+- [x] Uses `MODELS["tier2_structured"]` (gpt-4o-mini)
+- [x] Calls MCP: `get_similar_anomalies(description, anomaly_type, limit=3)` then `apply_remediation(anomaly_id, recommended_action, dry_run=True)` *(only `dry_run=False` when `state["should_auto_remediate"] and risk_level == "low"` — demo always uses True)*
+- [x] Queries RAG: `retrieve_playbook(description, anomaly_type)`
+- [x] LLM synthesizes matched playbook + similar resolutions → emits `RemediationPlan`; `playbook_reference` field populated from RAG match
+- [x] Calls `apply_remediation` with the plan's `action_type`; parses response into `RemediationOutcome`
+- [x] Sets `current_phase = "remediation_complete"` and `workflow_complete = True`
+- [x] Returns `{"remediation_plan": plan.model_dump(), "remediation_result": outcome.model_dump(), "current_phase": "remediation_complete", "workflow_complete": True}`
+- [x] Records `AgentDecision` for both plan and outcome
 
 **Verify (Phase 3 Gate):**
 ```bash

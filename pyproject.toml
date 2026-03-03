@@ -32,6 +32,7 @@ skip-magic-trailing-comma = false
 
 [tool.deptry]
 ignore = ["DEP002"]
+per_rule_ignores = { "DEP003" = ["src"] }
 package_module_name_map = { "python-dotenv" = "dotenv" }
 exclude = [
     "scripts/",
