@@ -22,8 +22,8 @@ A multi-agent AI system that automatically investigates data quality alerts, dia
    MC    :8082        anomaly_patterns       decisions.db
    Custom:8083        dq_rules
                       rem_playbooks               ▼
-                      business_context       OpenAI API
-                                           (GPT-4o / mini)
+                      business_context       Anthropic API
+                                           (Claude Opus/Sonnet/Haiku)
 ```
 
 **Key design principles:**
@@ -41,6 +41,30 @@ A multi-agent AI system that automatically investigates data quality alerts, dia
 | Docker Desktop (or Engine + Compose plugin) | 4.x+ |
 | RAM allocated to Docker | ≥ 4 GB |
 | Anthropic API key | Claude Opus/Sonnet/Haiku access |
+
+---
+
+## Download all wheels (optional, speeds up builds)
+
+Pre-downloading wheels avoids re-fetching large packages (torch ~700 MB) on every build.
+The main `Dockerfile` uses `--find-links ./wheels` so it uses local wheels when present and
+falls back to the internet for anything missing.
+
+```bash
+pip download --dest docker-wheels/ \
+    --extra-index-url https://download.pytorch.org/whl/cpu \
+    torch==2.10.0 sentence-transformers==5.2.3 \
+    langgraph==0.2.55 langchain-core==0.3.83 langchain==0.3.27 \
+    langchain-anthropic==0.3.4 langchain-chroma==0.2.6 \
+    langchain-community==0.3.31 \
+    llama-index-core==0.14.15 llama-index-embeddings-huggingface==0.6.1 \
+    chromadb==1.5.2 rank-bm25==0.2.2 fastmcp==3.1.0 \
+    fastapi==0.135.1 "uvicorn[standard]==0.41.0" httpx==0.28.1 \
+    pydantic==2.12.5 tenacity==9.1.4 python-dotenv==1.2.2 \
+    langgraph-checkpoint==2.1.2 langgraph-checkpoint-sqlite==2.0.11
+```
+
+To upgrade a package, change its version in `.env` and re-run the command above with the new version, then `docker compose build`.
 
 ---
 
@@ -100,8 +124,8 @@ Click **▶ Run Investigation**. The UI displays the investigation ID and starts
 
 #### Step 2 — Phase 1: Detection (automatic)
 
-- **Validation Agent** (GPT-4o-mini) calls the GX MCP server: creates an expectation suite, runs a checkpoint, and retrieves results. Finds 5% null rate in `customer_id` (500 / 10,000 rows) — a clear `expect_column_values_to_not_be_null` failure.
-- **Detection Agent** (GPT-4o-mini) calls the Monte Carlo mock for table health + recent anomalies. Queries the `anomaly_patterns` RAG collection and surfaces `DQ-2026-0001` (a similar historical null spike, resolved in 2.5h). Emits `anomaly_detected=True, confidence=0.91`.
+- **Validation Agent** (Claude Haiku 4.5) calls the GX MCP server: creates an expectation suite, runs a checkpoint, and retrieves results. Finds 5% null rate in `customer_id` (500 / 10,000 rows) — a clear `expect_column_values_to_not_be_null` failure.
+- **Detection Agent** (Claude Haiku 4.5) calls the Monte Carlo mock for table health + recent anomalies. Queries the `anomaly_patterns` RAG collection and surfaces `DQ-2026-0001` (a similar historical null spike, resolved in 2.5h). Emits `anomaly_detected=True, confidence=0.91`.
 
 Phase progress updates live in the UI. After Detection, `current_phase=detection_complete, severity=high`.
 
@@ -109,8 +133,8 @@ Phase progress updates live in the UI. After Detection, `current_phase=detection
 
 The Orchestrator routes to the Diagnosis pipeline because an anomaly was detected.
 
-- **Diagnosis Agent** (GPT-4o) synthesizes GX failures, Monte Carlo anomalies, and the RAG-retrieved historical case. Determines `root_cause="Upstream API deployment returning null customer_id values"`, `confidence=0.87`.
-- **Lineage Agent** (GPT-4o-mini) calls `analyze_data_lineage(orders, depth=3)`. Finds 4 downstream consumers (`revenue_report`, `customer_segment_model`, `marketing_pipeline`, `finance_dashboard`), `impact_radius=7`, `critical_path_breached=True`.
+- **Diagnosis Agent** (Claude Opus 4.6) synthesizes GX failures, Monte Carlo anomalies, and the RAG-retrieved historical case. Determines `root_cause="Upstream API deployment returning null customer_id values"`, `confidence=0.87`.
+- **Lineage Agent** (Claude Haiku 4.5) calls `analyze_data_lineage(orders, depth=3)`. Finds 4 downstream consumers (`revenue_report`, `customer_segment_model`, `marketing_pipeline`, `finance_dashboard`), `impact_radius=7`, `critical_path_breached=True`.
 
 After Lineage, `current_phase=diagnosis_complete, severity=high`.
 
@@ -118,8 +142,8 @@ After Lineage, `current_phase=diagnosis_complete, severity=high`.
 
 The Orchestrator routes to Remediation because `severity=high`.
 
-- **Business Impact Agent** (GPT-4o) calls `assess_business_impact`. Determines `escalation_required=True`, with `revenue_report` approaching its 2h SLA.
-- **Repair Agent** (GPT-4o-mini) retrieves playbook `PB-ROLLBACK-001` from RAG, calls `get_similar_anomalies` to find `DQ-2026-0001`'s resolution, then calls `apply_remediation(dry_run=True)`. Produces a 6-step rollback + backfill plan.
+- **Business Impact Agent** (Claude Opus 4.6) calls `assess_business_impact`. Determines `escalation_required=True`, with `revenue_report` approaching its 2h SLA.
+- **Repair Agent** (Claude Haiku 4.5) retrieves playbook `PB-ROLLBACK-001` from RAG, calls `get_similar_anomalies` to find `DQ-2026-0001`'s resolution, then calls `apply_remediation(dry_run=True)`. Produces a 6-step rollback + backfill plan.
 
 Final state: `current_phase=remediation_complete`.
 
@@ -326,8 +350,9 @@ AI-assisted-data-quality/
 │   └── TASKS.md                 # Implementation checklist (all phases complete)
 │
 ├── docker-compose.yml           # 6 services: app, chroma, mcp-gx, mcp-mc, mcp-custom, demo-ui
-├── Dockerfile                   # Python 3.11-slim; CPU-only torch
-└── .env.example                 # All 17 env vars with defaults
+├── Dockerfile                   # Python 3.11-slim; CPU-only torch; ARG-based version pinning
+├── docker-wheels/               # Pre-downloaded wheels (gitignored except .gitkeep)
+└── .env.example                 # Runtime env vars + dependency version build args
 ```
 
 ---
