@@ -2,7 +2,12 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
-RUN pip install --no-cache-dir torch --index-url https://download.pytorch.org/whl/cpu
+# Install torch (CPU-only) and sentence-transformers together so pip satisfies
+# the torch dependency in one pass — avoids a second ~1 GB download when
+# sentence-transformers is processed from requirements.txt.
+RUN pip install --no-cache-dir \
+    torch --index-url https://download.pytorch.org/whl/cpu \
+    sentence-transformers
 
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
