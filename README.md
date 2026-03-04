@@ -1,6 +1,68 @@
 # Data Quality & Observability Intelligence Platform
 
-A multi-agent AI system that automatically investigates data quality alerts, diagnoses root causes, assesses business impact, and produces remediation plans — all driven by a 7-node LangGraph workflow connected to real tooling via MCP.
+When something goes wrong with your data — a sudden spike in missing values, an unexpected drop in row counts, a column that has drifted to the wrong format — the usual response is a frantic search across dashboards, log files, Slack threads, and runbooks. This platform replaces that scramble with an AI team that does the investigation automatically, in under two minutes, and hands you a written diagnosis and a step-by-step fix.
+
+Seven specialised AI agents collaborate in a structured pipeline. Each agent focuses on one part of the problem — checking the data rules, detecting the anomaly, finding the root cause, mapping downstream damage, assessing business risk, and drafting the remediation plan. They share findings with each other, look up relevant history from a knowledge base, and call real data-quality tools along the way. A human stays in control: the plan is always presented for review before anything is changed in production.
+
+---
+
+## Who is this for?
+
+| Role | How it helps |
+|---|---|
+| **Data engineers** | Get a written root-cause report and a concrete fix plan instead of starting blind from a monitoring alert |
+| **Analytics engineers** | Understand which downstream models and dashboards are at risk before a broken table reaches a stakeholder |
+| **Data team leads** | See the business impact — SLA breach risk, financial exposure, escalation contacts — in the same report as the technical diagnosis |
+| **Platform / MLOps teams** | Use the REST API to integrate automated triage into an existing alert pipeline (PagerDuty, Airflow, dbt Cloud, etc.) |
+| **AI / LLM engineers** | A reference implementation of a production-quality multi-agent system: LangGraph orchestration, RAG-augmented agents, MCP tool servers, two-layer memory, and tiered Claude model usage |
+
+---
+
+## What it does, in plain language
+
+### Catches and confirms the problem
+When an alert fires — a null-value spike, a volume drop, a schema change — the platform first re-checks the data against your defined quality rules using Great Expectations. This separates a genuine problem from a noisy alert before spending any AI budget on it.
+
+### Finds the root cause
+A reasoning agent (Claude Opus) reads the validation results alongside 48 hours of historical anomaly data and a library of past incidents. It produces a written root-cause explanation with a confidence score — the same kind of analysis a senior data engineer would write, but in seconds rather than hours.
+
+### Maps the blast radius
+A lineage agent traces which upstream pipelines fed the broken table and which downstream tables, reports, and consumers depend on it. You see the full impact radius before deciding how urgently to act.
+
+### Tells you what it means for the business
+A business-impact agent translates the technical findings into stakeholder language: which SLAs are at risk of breach, an estimated financial exposure, which teams need to be looped in, and who the on-call escalation contact is.
+
+### Proposes a safe fix
+A remediation agent matches the situation against your playbook library, generates a step-by-step repair plan, and runs it in dry-run mode first. The plan is presented for human approval; it is only applied automatically if you explicitly enable auto-remediation and the risk level is rated `low`.
+
+### Gets smarter over time
+Every decision the agents make is stored in a local SQLite database. When you mark an investigation as resolved (or not), that outcome is attached to all the agent decisions in that run. Future investigations on similar anomalies retrieve those historical outcomes from the knowledge base and use them to improve their analysis — a lightweight feedback loop that compounds over time.
+
+---
+
+## Possible use cases
+
+**Automated alert triage in a data platform**
+Point your monitoring tool (Monte Carlo, Great Expectations Cloud, dbt tests, custom Airflow sensors) at the REST API. When an alert fires, `POST /api/v1/investigations` to kick off an investigation automatically. By the time an engineer looks at the PagerDuty page, the root cause and remediation plan are already written.
+
+**Pre-deployment data validation gate**
+Run an investigation against a staging dataset before a pipeline promotion. If the validation or detection agents flag a problem, the deployment is blocked and a written explanation is returned to the CI job.
+
+**Incident retrospective generation**
+After a data incident is resolved, retrieve the full investigation state via the API and use it as the raw material for a post-mortem. All agent findings, confidence scores, and latencies are structured JSON — easy to feed into a report template.
+
+**SLA monitoring with impact scoring**
+Use the business-impact agent's output to triage incidents by revenue risk rather than alert severity. A low-confidence anomaly in a high-revenue table may deserve faster escalation than a high-confidence anomaly in a cold-path table.
+
+**Knowledge base for on-call engineers**
+The three knowledge-base tabs (anomaly patterns, DQ rules, remediation playbooks, business context) can be queried directly via the UI or API without running a full investigation. Useful for looking up "what did we do last time this happened?" during an incident.
+
+**Reference architecture for multi-agent AI systems**
+The codebase demonstrates several patterns that are difficult to find in a single working example: severity-gated conditional routing in LangGraph, per-agent RAG context enrichment, Model Context Protocol (MCP) tool servers, tiered LLM usage (Opus for reasoning, Sonnet for structured output, Haiku for fast tasks), session checkpointing, and a two-level mock testing strategy that runs without any external services.
+
+---
+
+## System architecture
 
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
@@ -27,10 +89,10 @@ A multi-agent AI system that automatically investigates data quality alerts, dia
 ```
 
 **Key design principles:**
-- **Severity-gated routing** — Diagnosis only runs when an anomaly is detected; Remediation only runs for `critical`/`high` severity
-- **RAG-augmented agents** — every agent enriches LLM context with semantically retrieved historical anomalies, playbooks, and business rules
-- **Two-layer memory** — LangGraph session checkpoints (short-term) + SQLite decision history with user feedback (long-term learning)
-- **Single-call MCP tools** — no polling loops; each tool call returns a complete result
+- **Severity-gated routing** — Diagnosis only runs when an anomaly is detected; Remediation only runs for `critical`/`high` severity, so low-signal alerts don't waste compute or API budget
+- **RAG-augmented agents** — every agent retrieves relevant historical anomalies, playbooks, and business rules from the knowledge base before calling the LLM, keeping prompts grounded in your data's actual history
+- **Two-layer memory** — LangGraph session checkpoints store the in-flight workflow state; a SQLite decision log stores every agent judgment with feedback, enabling long-term learning across investigations
+- **Single-call MCP tools** — agents call Great Expectations, Monte Carlo, and custom lineage/remediation tools via the Model Context Protocol; each call returns a complete result with no polling loops
 
 ---
 
