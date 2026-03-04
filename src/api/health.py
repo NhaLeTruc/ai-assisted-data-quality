@@ -33,7 +33,7 @@ def _mcp_health_url(mcp_url: str) -> str:
 
 @router.get("/health")
 async def health_check() -> dict:
-    chroma_url = f"http://{CHROMA_HOST}:{CHROMA_PORT}/api/v1/heartbeat"
+    chroma_url = f"http://{CHROMA_HOST}:{CHROMA_PORT}/api/v2/heartbeat"
     gx_url = _mcp_health_url(MCP_GX_URL)
     mc_url = _mcp_health_url(MCP_MC_URL)
     custom_url = _mcp_health_url(MCP_CUSTOM_URL)
