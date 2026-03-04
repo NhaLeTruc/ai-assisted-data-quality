@@ -41,6 +41,32 @@ A multi-agent AI system that automatically investigates data quality alerts, dia
 | Docker Desktop (or Engine + Compose plugin) | 4.x+ |
 | RAM allocated to Docker | ≥ 4 GB |
 | Anthropic API key | Claude Opus/Sonnet/Haiku access |
+| Python | 3.11+ (for running tests locally) |
+| GNU Make | any recent version |
+
+---
+
+## Quick Reference
+
+```
+make quickstart      First-time setup: .env → build → start → seed
+make up              Start services (after first build)
+make seed            Re-seed the knowledge base
+make reset           Full reset: wipe data, restart, re-seed
+
+make test            Run all tests (86 unit + integration)
+make test-unit       Unit tests only (no Docker needed)
+make test-integration  Integration tests only
+make lint            Ruff lint + format check
+
+make down            Stop and remove containers
+make stop            Pause containers (resume with: make up)
+make clean           Remove containers and delete all persisted data
+
+make logs            Tail logs from all services
+make health          Print all service health statuses
+make help            List all targets with descriptions
+```
 
 ---
 
@@ -64,27 +90,36 @@ pip download --dest docker-wheels/ \
     langgraph-checkpoint==2.1.2 langgraph-checkpoint-sqlite==2.0.11
 ```
 
-To upgrade a package, change its version in `.env` and re-run the command above with the new version, then `docker compose build`.
+To upgrade a package, change its version in `.env` and re-run the command above with the new version, then `make build`.
 
 ---
 
 ## Quickstart
 
 ```bash
-# 1. Clone and configure
 git clone <repo-url>
 cd AI-assisted-data-quality
-cp .env.example .env
-# Edit .env — set ANTHROPIC_API_KEY=sk-ant-...
-
-# 2. Build and start all 6 services
-docker compose up -d
-
-# 3. Seed the knowledge base (run once after first start)
-docker compose exec app python scripts/seed_demo_data.py
+make quickstart
 ```
 
-Wait ~30 seconds for healthchecks to pass, then open **http://localhost:3000**.
+`make quickstart` will:
+1. Create `.env` from `.env.example` (and stop if `ANTHROPIC_API_KEY` is still the placeholder)
+2. Build all 6 Docker images
+3. Start the full stack (`docker compose up -d`)
+4. Wait 45 s for healthchecks to pass
+5. Seed all 4 Chroma knowledge-base collections
+
+Then open **http://localhost:3000**.
+
+**Manual equivalent** (if you prefer explicit steps):
+
+```bash
+cp .env.example .env          # then edit ANTHROPIC_API_KEY
+docker compose build
+docker compose up -d
+sleep 45
+docker compose exec app python scripts/seed_demo_data.py
+```
 
 ---
 
@@ -268,15 +303,57 @@ curl http://localhost:8083/health
 
 ---
 
-## Reset to Clean State
+## Testing
 
-To wipe all data and start fresh (useful between demo runs):
+Tests run entirely locally — no Docker required. A mock Anthropic server (started automatically by the test suite) handles all LLM calls, so no real API key is needed.
 
 ```bash
-bash scripts/reset_demo.sh
+make test               # all 86 tests (unit + integration)
+make test-unit          # 71 unit tests — agent nodes, routing, MCP session logic
+make test-integration   # 15 integration tests — full HTTP API layer
+make lint               # ruff lint + format check
 ```
 
-This stops all containers, clears `data/chroma/` and `data/sqlite/`, restarts services, waits 45 seconds for healthchecks, then re-seeds all 4 Chroma collections automatically.
+On first run `make test` creates a `.venv`, installs `requirements.txt` + `requirements-dev.txt`, then runs pytest. Subsequent runs skip the install step unless either requirements file has changed.
+
+**What is tested:**
+
+| Suite | Coverage |
+|---|---|
+| `tests/unit/test_orchestrator.py` | `terminal_node`, `route_from_orchestrator` (all branches), `safe_agent_node` latency/error tracking, MCP session caching, SSE parsing |
+| `tests/unit/test_validation_node.py` | Happy path, 3 MCP tool calls, RAG retrieval, LLM fallback, resilience to each dependency failing |
+| `tests/unit/test_detection_node.py` | Severity mapping for all 5 alert types, `anomaly_detected=False` → `severity=None`, resilience |
+| `tests/unit/test_diagnosis_node.py` | 48 h Monte Carlo lookback, RAG similar-anomaly + playbook queries, fallback |
+| `tests/unit/test_lineage_node.py` | `current_phase` transition, severity propagation from `diagnosis_result`, resilience |
+| `tests/unit/test_business_impact_node.py` | Fallback escalation logic for critical/high severity, resilience |
+| `tests/unit/test_repair_node.py` | Dry-run default, `auto_remediate + risk_level=low` → live run, medium-risk stays dry |
+| `tests/integration/test_investigation_api.py` | All REST endpoints: POST/GET investigations, feedback, RAG query/index, health |
+
+**Mock strategy:** unit tests patch `invoke_with_retry`, `call_mcp_tool`, `get_retriever`, and `get_long_term_memory` at each agent module. Integration tests use a lightweight test FastAPI app with mocked `app.state`, backed by a real in-process mock Anthropic server on port 19876.
+
+---
+
+## Shutdown
+
+```bash
+make down       # stop and remove all containers (data in ./data/ is preserved)
+make stop       # pause containers — resume later with: make up
+make clean      # remove containers AND delete ./data/chroma/ and ./data/sqlite/
+```
+
+Use `make clean` when you want a completely fresh start (equivalent to `make reset` but without the automatic restart and re-seed).
+
+---
+
+## Reset to Clean State
+
+To wipe all data and restart with a freshly seeded knowledge base in one step:
+
+```bash
+make reset
+```
+
+This is equivalent to running `bash scripts/reset_demo.sh`: stops all containers, clears `data/chroma/` and `data/sqlite/`, restarts services, waits 45 seconds for healthchecks, then re-seeds all 4 Chroma collections automatically.
 
 ---
 
