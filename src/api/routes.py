@@ -105,7 +105,8 @@ async def list_investigations(
     try:
         rows = conn.execute(
             """
-            SELECT DISTINCT investigation_id FROM agent_decisions
+            SELECT investigation_id FROM agent_decisions
+            GROUP BY investigation_id
             ORDER BY MIN(created_at) DESC
             LIMIT ? OFFSET ?
             """,
