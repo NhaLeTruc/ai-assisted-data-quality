@@ -1,3 +1,5 @@
+docker-wheels/*
+!docker-wheels/.gitkeep
 data/chroma/*
 !data/chroma/.gitkeep
 data/sqlite/*

@@ -69,7 +69,7 @@ def build_workflow(sqlite_path: str) -> CompiledGraph:
     graph.add_node("detection", safe_agent_node(detection_node))
     graph.add_node("diagnosis", safe_agent_node(diagnosis_node))
     graph.add_node("lineage", safe_agent_node(lineage_node))
-    graph.add_node("business_impact", safe_agent_node(business_impact_node))
+    graph.add_node("impact_agent", safe_agent_node(business_impact_node))
     graph.add_node("repair", safe_agent_node(repair_node))
 
     graph.set_entry_point("orchestrator")
@@ -80,7 +80,7 @@ def build_workflow(sqlite_path: str) -> CompiledGraph:
         {
             "validation": "validation",
             "diagnosis": "diagnosis",
-            "business_impact": "business_impact",
+            "business_impact": "impact_agent",
             "complete": END,
         },
     )
@@ -94,7 +94,7 @@ def build_workflow(sqlite_path: str) -> CompiledGraph:
     graph.add_edge("lineage", "orchestrator")
 
     # Phase 3 chain: business_impact → repair → orchestrator
-    graph.add_edge("business_impact", "repair")
+    graph.add_edge("impact_agent", "repair")
     graph.add_edge("repair", "orchestrator")
 
     return graph.compile(checkpointer=memory)

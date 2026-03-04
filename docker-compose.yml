@@ -2,7 +2,30 @@ version: "3.8"
 
 services:
   app:
-    build: .
+    build:
+      context: .
+      args:
+        TORCH_VERSION: ${TORCH_VERSION:-2.10.0}
+        SENTENCE_TRANSFORMERS_VERSION: ${SENTENCE_TRANSFORMERS_VERSION:-5.2.3}
+        LANGGRAPH_VERSION: ${LANGGRAPH_VERSION:-0.2.55}
+        LANGGRAPH_CHECKPOINT_VERSION: ${LANGGRAPH_CHECKPOINT_VERSION:-2.1.2}
+        LANGGRAPH_CHECKPOINT_SQLITE_VERSION: ${LANGGRAPH_CHECKPOINT_SQLITE_VERSION:-2.0.11}
+        LANGCHAIN_CORE_VERSION: ${LANGCHAIN_CORE_VERSION:-0.3.83}
+        LANGCHAIN_VERSION: ${LANGCHAIN_VERSION:-0.3.27}
+        LANGCHAIN_ANTHROPIC_VERSION: ${LANGCHAIN_ANTHROPIC_VERSION:-0.3.4}
+        LANGCHAIN_CHROMA_VERSION: ${LANGCHAIN_CHROMA_VERSION:-0.2.6}
+        LANGCHAIN_COMMUNITY_VERSION: ${LANGCHAIN_COMMUNITY_VERSION:-0.3.31}
+        LLAMA_INDEX_CORE_VERSION: ${LLAMA_INDEX_CORE_VERSION:-0.14.15}
+        LLAMA_INDEX_EMBEDDINGS_HF_VERSION: ${LLAMA_INDEX_EMBEDDINGS_HF_VERSION:-0.6.1}
+        CHROMADB_VERSION: ${CHROMADB_VERSION:-1.5.2}
+        RANK_BM25_VERSION: ${RANK_BM25_VERSION:-0.2.2}
+        FASTMCP_VERSION: ${FASTMCP_VERSION:-3.1.0}
+        FASTAPI_VERSION: ${FASTAPI_VERSION:-0.135.1}
+        UVICORN_VERSION: ${UVICORN_VERSION:-0.41.0}
+        HTTPX_VERSION: ${HTTPX_VERSION:-0.28.1}
+        PYDANTIC_VERSION: ${PYDANTIC_VERSION:-2.12.5}
+        TENACITY_VERSION: ${TENACITY_VERSION:-9.1.4}
+        PYTHON_DOTENV_VERSION: ${PYTHON_DOTENV_VERSION:-1.2.2}
     ports:
       - "8000:8000"
     environment:
@@ -49,14 +72,22 @@ services:
     environment:
       - ANONYMIZED_TELEMETRY=false
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/heartbeat"]
+      test: ["CMD-SHELL", "grep -q ':1F40' /proc/net/tcp6 || grep -q ':1F40' /proc/net/tcp"]
       interval: 10s
       timeout: 5s
       start_period: 20s
       retries: 5
 
   mcp-gx:
-    build: ./mcp-servers/great-expectations
+    build:
+      context: ./mcp-servers/great-expectations
+      args:
+        FASTMCP_VERSION: ${FASTMCP_VERSION:-3.1.0}
+        GREAT_EXPECTATIONS_VERSION: ${GREAT_EXPECTATIONS_VERSION:-1.13.0}
+        PANDAS_VERSION: ${PANDAS_VERSION:-2.3.3}
+        FASTAPI_VERSION: ${FASTAPI_VERSION:-0.135.1}
+        UVICORN_VERSION: ${UVICORN_VERSION:-0.41.0}
+        PYDANTIC_VERSION: ${PYDANTIC_VERSION:-2.12.5}
     ports:
       - "8081:8081"
     volumes:
@@ -71,7 +102,13 @@ services:
       retries: 5
 
   mcp-mc:
-    build: ./mcp-servers/monte-carlo-mock
+    build:
+      context: ./mcp-servers/monte-carlo-mock
+      args:
+        FASTMCP_VERSION: ${FASTMCP_VERSION:-3.1.0}
+        FASTAPI_VERSION: ${FASTAPI_VERSION:-0.135.1}
+        UVICORN_VERSION: ${UVICORN_VERSION:-0.41.0}
+        PYDANTIC_VERSION: ${PYDANTIC_VERSION:-2.12.5}
     ports:
       - "8082:8082"
     volumes:
@@ -84,7 +121,15 @@ services:
       retries: 5
 
   mcp-custom:
-    build: ./mcp-servers/custom
+    build:
+      context: ./mcp-servers/custom
+      args:
+        FASTMCP_VERSION: ${FASTMCP_VERSION:-3.1.0}
+        FASTAPI_VERSION: ${FASTAPI_VERSION:-0.135.1}
+        UVICORN_VERSION: ${UVICORN_VERSION:-0.41.0}
+        CHROMADB_VERSION: ${CHROMADB_VERSION:-1.5.2}
+        HTTPX_VERSION: ${HTTPX_VERSION:-0.28.1}
+        PYDANTIC_VERSION: ${PYDANTIC_VERSION:-2.12.5}
     ports:
       - "8083:8083"
     environment:
@@ -101,7 +146,11 @@ services:
       retries: 5
 
   demo-ui:
-    build: ./ui
+    build:
+      context: ./ui
+      args:
+        STREAMLIT_VERSION: ${STREAMLIT_VERSION:-1.55.0}
+        HTTPX_VERSION: ${HTTPX_VERSION:-0.28.1}
     ports:
       - "3000:8501"
     environment:

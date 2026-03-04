@@ -1,5 +1,6 @@
-fastmcp
-fastapi
-uvicorn
-chromadb
-httpx
+fastmcp==3.1.0
+fastapi==0.135.1
+uvicorn==0.41.0
+chromadb==1.5.2
+httpx==0.28.1
+pydantic==2.12.5

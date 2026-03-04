@@ -2,9 +2,14 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
-RUN pip install --no-cache-dir streamlit httpx
+ARG STREAMLIT_VERSION=1.55.0
+ARG HTTPX_VERSION=0.28.1
 
-COPY . .
+RUN pip install --no-cache-dir \
+    streamlit==${STREAMLIT_VERSION} \
+    httpx==${HTTPX_VERSION}
+
+COPY app.py .
 
 EXPOSE 8501
 
