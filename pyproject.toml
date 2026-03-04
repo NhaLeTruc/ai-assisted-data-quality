@@ -30,6 +30,15 @@ quote-style = "double"
 indent-style = "space"
 skip-magic-trailing-comma = false
 
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+filterwarnings = [
+    "ignore::DeprecationWarning",
+    "ignore::PendingDeprecationWarning",
+    "ignore::UserWarning:torch",
+]
+
 [tool.deptry]
 ignore = ["DEP002"]
 per_rule_ignores = { "DEP003" = ["src"] }
