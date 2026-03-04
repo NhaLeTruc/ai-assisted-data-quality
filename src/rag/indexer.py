@@ -3,17 +3,18 @@ import logging
 import chromadb
 from llama_index.core.node_parser import SemanticSplitterNodeParser
 from llama_index.core.schema import Document as LlamaDocument
-from llama_index.embeddings.openai import OpenAIEmbedding
+from llama_index.embeddings.huggingface import HuggingFaceEmbedding
 
 logger = logging.getLogger(__name__)
 
 _COLLECTIONS = ["anomaly_patterns", "dq_rules", "remediation_playbooks", "business_context"]
+_EMBED_MODEL_NAME = "BAAI/bge-base-en-v1.5"
 
 
 class DataQualityIndexer:
     def __init__(self, chroma_host: str, chroma_port: int) -> None:
         self.chroma_client = chromadb.HttpClient(host=chroma_host, port=chroma_port)
-        self.embed_model = OpenAIEmbedding(model="text-embedding-3-large")
+        self.embed_model = HuggingFaceEmbedding(model_name=_EMBED_MODEL_NAME)
         self.splitter = SemanticSplitterNodeParser(
             buffer_size=1,
             breakpoint_percentile_threshold=95,
@@ -63,7 +64,7 @@ class DataQualityIndexer:
                 chunk_ids = [doc_id]
                 chunk_metas = [metadata]
 
-            # Explicit embeddings so Chroma stores OpenAI vectors (not default model)
+            # Explicit embeddings so Chroma stores HuggingFace vectors (not default model)
             embeddings_list = self.embed_model.get_text_embedding_batch(texts)
             collection.upsert(
                 ids=chunk_ids,

@@ -71,7 +71,7 @@ async def business_impact_node(state: dict) -> dict:
     except Exception as e:
         logger.warning("Business context retrieval failed: %s", e)
 
-    # LLM synthesis (tier1 - gpt-4o)
+    # LLM synthesis (tier1 - claude-opus-4-6)
     model = MODELS["tier1_reasoning"]
     prompt = _build_prompt(
         table_name,

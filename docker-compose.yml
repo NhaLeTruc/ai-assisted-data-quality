@@ -6,7 +6,7 @@ services:
     ports:
       - "8000:8000"
     environment:
-      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
       - CHROMA_HOST=chroma
       - CHROMA_PORT=8000
       - MCP_GX_URL=http://mcp-gx:8081/mcp

@@ -2,7 +2,8 @@ import logging
 import os
 
 from dotenv import load_dotenv
-from langchain_openai import ChatOpenAI, OpenAIEmbeddings
+from langchain_anthropic import ChatAnthropic
+from langchain_community.embeddings import HuggingFaceEmbeddings
 from tenacity import retry, stop_after_attempt, wait_exponential
 
 load_dotenv()
@@ -32,27 +33,26 @@ logging.basicConfig(level=getattr(logging, LOG_LEVEL, logging.INFO))
 # ---------------------------------------------------------------------------
 
 MODELS: dict = {
-    "tier1_reasoning": ChatOpenAI(
-        model="gpt-4o",
+    "tier1_reasoning": ChatAnthropic(
+        model="claude-opus-4-6",
         temperature=0.1,
         max_tokens=4096,
         timeout=60,
     ),
-    "tier2_structured": ChatOpenAI(
-        model="gpt-4o-mini",
+    "tier2_structured": ChatAnthropic(
+        model="claude-sonnet-4-6",
         temperature=0.0,
         max_tokens=2048,
         timeout=30,
     ),
-    "tier3_simple": ChatOpenAI(
-        model="gpt-4o-mini",
+    "tier3_simple": ChatAnthropic(
+        model="claude-haiku-4-5-20251001",
         temperature=0.0,
         max_tokens=1024,
         timeout=15,
     ),
-    "embeddings": OpenAIEmbeddings(
-        model="text-embedding-3-large",
-        dimensions=3072,
+    "embeddings": HuggingFaceEmbeddings(
+        model_name="BAAI/bge-base-en-v1.5",
     ),
 }
 
@@ -61,9 +61,9 @@ MODELS: dict = {
 # ---------------------------------------------------------------------------
 
 PRICING: dict[str, dict[str, float]] = {
-    "gpt-4o": {"input": 0.0025, "output": 0.010},
-    "gpt-4o-mini": {"input": 0.00015, "output": 0.0006},
-    "text-embedding-3-large": {"input": 0.00013, "output": 0.0},
+    "claude-opus-4-6": {"input": 0.015, "output": 0.075},
+    "claude-sonnet-4-6": {"input": 0.003, "output": 0.015},
+    "claude-haiku-4-5-20251001": {"input": 0.0008, "output": 0.004},
 }
 
 

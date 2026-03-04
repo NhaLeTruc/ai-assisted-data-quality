@@ -75,7 +75,7 @@ async def diagnosis_node(state: dict) -> dict:
     except Exception as e:
         logger.warning("RAG retrieval failed: %s", e)
 
-    # LLM synthesis (tier1 - gpt-4o reasoning)
+    # LLM synthesis (tier1 - claude-opus-4-6 reasoning)
     model = MODELS["tier1_reasoning"]
     prompt = _build_prompt(
         table_name,

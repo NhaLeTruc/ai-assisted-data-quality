@@ -40,7 +40,7 @@ A multi-agent AI system that automatically investigates data quality alerts, dia
 |---|---|
 | Docker Desktop (or Engine + Compose plugin) | 4.x+ |
 | RAM allocated to Docker | ≥ 4 GB |
-| OpenAI API key | GPT-4o and GPT-4o-mini access |
+| Anthropic API key | Claude Opus/Sonnet/Haiku access |
 
 ---
 
@@ -51,7 +51,7 @@ A multi-agent AI system that automatically investigates data quality alerts, dia
 git clone <repo-url>
 cd AI-assisted-data-quality
 cp .env.example .env
-# Edit .env — set OPENAI_API_KEY=sk-...
+# Edit .env — set ANTHROPIC_API_KEY=sk-ant-...
 
 # 2. Build and start all 6 services
 docker compose up -d
@@ -262,7 +262,7 @@ All configuration is via environment variables in `.env`. Copy `.env.example` to
 
 | Variable | Default | Description |
 |---|---|---|
-| `OPENAI_API_KEY` | — | **Required.** GPT-4o and GPT-4o-mini access |
+| `ANTHROPIC_API_KEY` | — | **Required.** Claude Opus 4.6, Sonnet 4.6, Haiku 4.5 access |
 | `CHROMA_HOST` | `chroma` | Chroma container hostname |
 | `CHROMA_PORT` | `8000` | Internal Chroma port |
 | `MCP_GX_URL` | `http://mcp-gx:8081/mcp` | Great Expectations MCP endpoint |
@@ -337,8 +337,8 @@ AI-assisted-data-quality/
 | Layer | Technology |
 |---|---|
 | Agent framework | LangGraph (StateGraph, conditional routing, SQLite checkpoints) |
-| LLM | GPT-4o (reasoning agents), GPT-4o-mini (structured + simple agents) |
-| Embeddings | `text-embedding-3-large` (3072 dimensions) |
+| LLM | Claude Opus 4.6 (reasoning agents), Sonnet 4.6 (structured), Haiku 4.5 (simple) |
+| Embeddings | `BAAI/bge-base-en-v1.5` via sentence-transformers (local, 768 dimensions) |
 | RAG retrieval | BM25 + Chroma vector ensemble → MiniLM-L-6-v2 cross-encoder reranker |
 | RAG indexing | LlamaIndex semantic splitter → ChromaDB |
 | MCP servers | FastMCP (Streamable HTTP) |
