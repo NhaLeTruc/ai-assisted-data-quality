@@ -591,20 +591,20 @@ curl http://localhost:8000/api/v1/investigations/$ID | python3 -m json.tool
 
 **File:** `ui/app.py`
 
-- [ ] `st.set_page_config(page_title="Data Quality Intelligence Platform", layout="wide")`
-- [ ] **Sidebar:** `@st.cache_data(ttl=5)` health check fn; green/red status badge via `st.markdown()`; session cost `st.metric()`; "Reset Demo" button
-- [ ] **Tab 1 — Run Investigation:**
+- [x] `st.set_page_config(page_title="Data Quality Intelligence Platform", layout="wide")`
+- [x] **Sidebar:** `@st.cache_data(ttl=5)` health check fn; green/red status badge via `st.markdown()`; session cost `st.metric()`; "Reset Demo" button
+- [x] **Tab 1 — Run Investigation:**
   - `st.form()` with fields: `dataset_id` text, `table_name` text, `alert_type` selectbox, `description` text_area
   - On submit: `POST /api/v1/investigations`, save `investigation_id` to `st.session_state["active_id"]`
   - Polling: check `st.session_state["active_id"]`; if set, poll `GET /api/v1/investigations/{id}` every 2s using `time.sleep(2); st.rerun()` pattern
   - Phase progress containers: 3 `st.empty()` blocks that update as `current_phase` advances
   - Severity badge: `st.markdown(f'<span style="color:{color}">■ {severity.upper()}</span>', unsafe_allow_html=True)`
   - Agent latencies: `st.bar_chart(state["agent_latencies"])` after `workflow_complete`
-- [ ] **Tab 2 — Investigation History:**
+- [x] **Tab 2 — Investigation History:**
   - `GET /api/v1/investigations?limit=20` on tab render
   - `st.dataframe()` with rows; selected row shown in `st.expander()`
   - `st.button("Mark Resolved")` → `POST .../feedback` with `{"was_resolved":True,"resolution_notes":""}`
-- [ ] **Tab 3 — Knowledge Base:**
+- [x] **Tab 3 — Knowledge Base:**
   - `st.text_input("Query")`, `st.selectbox("Collection", [...])`, `st.slider("Results", 1, 10, 3)`
   - `st.button("Search")` → `POST /api/v1/rag/query`
   - Results as `st.expander(f"Result {i+1} (score: {score:.3f})")` with `st.json(metadata)` inside
