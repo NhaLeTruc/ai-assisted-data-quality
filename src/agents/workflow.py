@@ -3,7 +3,7 @@ from typing import TypedDict
 
 from langgraph.checkpoint.sqlite import SqliteSaver
 from langgraph.graph import END, StateGraph
-from langgraph.graph.graph import CompiledGraph
+from langgraph.graph.state import CompiledStateGraph as CompiledGraph
 
 from src.agents.business_impact import business_impact_node
 from src.agents.detection import detection_node

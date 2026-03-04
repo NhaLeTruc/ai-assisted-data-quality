@@ -521,15 +521,15 @@ print('Graph OK')
 
 **File:** `src/api/health.py`
 
-- [ ] `APIRouter` with `GET /health`
-- [ ] Probes 5 services concurrently via `asyncio.gather` with 5s timeout per service:
+- [x] `APIRouter` with `GET /health`
+- [x] Probes 5 services concurrently via `asyncio.gather` with 5s timeout per service:
   - Chroma: `GET http://{CHROMA_HOST}:{CHROMA_PORT}/api/v1/heartbeat`
   - mcp-gx: replace `/mcp` → `/health` in `MCP_GX_URL`
   - mcp-mc: replace `/mcp` → `/health` in `MCP_MC_URL`
   - mcp-custom: replace `/mcp` → `/health` in `MCP_CUSTOM_URL`
   - app itself: always `"healthy"` (self-check)
-- [ ] Returns `{"status": "healthy" if all pass else "degraded", "checks": {name: "healthy"|"degraded"}, "cost_session": cost_tracker.report()}`
-- [ ] Uses `httpx.AsyncClient` for async HTTP calls
+- [x] Returns `{"status": "healthy" if all pass else "degraded", "checks": {name: "healthy"|"degraded"}, "cost_session": cost_tracker.report()}`
+- [x] Uses `httpx.AsyncClient` for async HTTP calls
 
 **Verify:** `curl http://localhost:8000/health` returns JSON with `"status":"healthy"` when all services are up.
 
@@ -539,13 +539,13 @@ print('Graph OK')
 
 **File:** `src/api/routes.py`
 
-- [ ] `APIRouter(prefix="/api/v1")`
-- [ ] **`POST /investigations`** (202): validate body as `InvestigationTrigger`; generate `investigation_id = str(uuid4())`; build full initial `DataQualityState` with all Optional fields = `None`, `current_phase="initial"`, `errors=[]`, `agent_latencies={}`, `should_auto_remediate=False`, `workflow_complete=False`; add to `BackgroundTasks`; return `{"investigation_id", "status":"started", "triggered_at"}`
-- [ ] **`GET /investigations/{investigation_id}`** (200/404): load checkpoint via `request.app.state.workflow.get_state({"configurable":{"thread_id":id}})`; return `.values` as response dict; 404 if no checkpoint found
-- [ ] **`POST /investigations/{investigation_id}/feedback`** (200): call `request.app.state.long_term_memory.record_feedback(id, was_resolved, notes)`; return `{"updated":True,"decisions_updated":int}`
-- [ ] **`GET /investigations`** (200): query `decisions.db` SQLite directly for distinct `investigation_id` values; support `limit`, `offset`, optional `severity` filter
-- [ ] **`POST /rag/query`** (200): route to correct `DataQualityRetriever` method based on `collection` field; return `{"results":[{"content","metadata","score"}]}`
-- [ ] **`POST /rag/index`** (200): call `request.app.state.indexer.index_documents(collection, documents)`; return `{"indexed":int}`
+- [x] `APIRouter(prefix="/api/v1")`
+- [x] **`POST /investigations`** (202): validate body as `InvestigationTrigger`; generate `investigation_id = str(uuid4())`; build full initial `DataQualityState` with all Optional fields = `None`, `current_phase="initial"`, `errors=[]`, `agent_latencies={}`, `should_auto_remediate=False`, `workflow_complete=False`; add to `BackgroundTasks`; return `{"investigation_id", "status":"started", "triggered_at"}`
+- [x] **`GET /investigations/{investigation_id}`** (200/404): load checkpoint via `request.app.state.workflow.get_state({"configurable":{"thread_id":id}})`; return `.values` as response dict; 404 if no checkpoint found
+- [x] **`POST /investigations/{investigation_id}/feedback`** (200): call `request.app.state.long_term_memory.record_feedback(id, was_resolved, notes)`; return `{"updated":True,"decisions_updated":int}`
+- [x] **`GET /investigations`** (200): query `decisions.db` SQLite directly for distinct `investigation_id` values; support `limit`, `offset`, optional `severity` filter
+- [x] **`POST /rag/query`** (200): route to correct `DataQualityRetriever` method based on `collection` field; return `{"results":[{"content","metadata","score"}]}`
+- [x] **`POST /rag/index`** (200): call `request.app.state.indexer.index_documents(collection, documents)`; return `{"indexed":int}`
 
 **Verify:** All 6 endpoints return expected status codes; `POST /api/v1/rag/query` returns results after seeding.
 
@@ -555,10 +555,10 @@ print('Graph OK')
 
 **File:** `src/main.py`
 
-- [ ] `FastAPI(title="Data Quality Intelligence API", version="1.0.0")`
-- [ ] `CORSMiddleware` with `allow_origins=["*"]` for demo
-- [ ] Include routers: `health_router` (no prefix), `api_router` (prefix `/api/v1`)
-- [ ] `@app.on_event("startup")` handler:
+- [x] `FastAPI(title="Data Quality Intelligence API", version="1.0.0")`
+- [x] `CORSMiddleware` with `allow_origins=["*"]` for demo
+- [x] Include routers: `health_router` (no prefix), `api_router` (prefix `/api/v1`)
+- [x] `@app.on_event("startup")` handler:
   1. `os.makedirs` for `SQLITE_PATH` and `DECISIONS_DB_PATH` parent dirs
   2. `app.state.workflow = build_workflow(SQLITE_PATH)`
   3. `app.state.indexer = DataQualityIndexer(CHROMA_HOST, int(CHROMA_PORT))`
