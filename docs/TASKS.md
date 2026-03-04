@@ -626,10 +626,10 @@ docker compose exec app python scripts/seed_demo_data.py
 
 ### T-60 · Validate reset script end-to-end
 
-- [ ] Run `bash scripts/reset_demo.sh` from a fully running stack
-- [ ] Confirm: containers stop, data dirs cleared, containers restart, seed script runs, Chroma collections re-populated
-- [ ] If healthchecks time out, increase `sleep` from 30 to 45 in `reset_demo.sh`
-- [ ] Run the demo scenario once after reset to confirm clean-slate behaviour
+- [x] Run `bash scripts/reset_demo.sh` from a fully running stack
+- [x] Confirm: containers stop, data dirs cleared, containers restart, seed script runs, Chroma collections re-populated
+- [x] If healthchecks time out, increase `sleep` from 30 to 45 in `reset_demo.sh`
+- [x] Run the demo scenario once after reset to confirm clean-slate behaviour
 
 **Verify:** Post-reset `GET /health` is healthy and `GET /api/v1/investigations` returns empty list.
 
@@ -639,9 +639,9 @@ docker compose exec app python scripts/seed_demo_data.py
 
 **File:** `Dockerfile`
 
-- [ ] Confirm `RUN pip install torch --index-url https://download.pytorch.org/whl/cpu` precedes `pip install -r requirements.txt`
-- [ ] `docker images dq-app` shows image size < 2GB
-- [ ] If still large: add `--no-cache-dir` to all pip install calls; consider `.dockerignore` to exclude `demo-data/`, `docs/`, `data/`
+- [x] Confirm `RUN pip install torch --index-url https://download.pytorch.org/whl/cpu` precedes `pip install -r requirements.txt`
+- [x] `docker images dq-app` shows image size < 2GB
+- [x] If still large: add `--no-cache-dir` to all pip install calls; consider `.dockerignore` to exclude `demo-data/`, `docs/`, `data/`
 
 **Verify:** `docker images | grep dq-app` shows compressed size ≤ 2GB.
 
@@ -649,10 +649,10 @@ docker compose exec app python scripts/seed_demo_data.py
 
 ### T-62 · Graceful degradation — MCP server down
 
-- [ ] Stop `mcp-gx` (`docker compose stop mcp-gx`), trigger an investigation
-- [ ] Verify: `errors` list in state is non-empty; `validation_result` is absent or has `"degraded":True`; workflow continues to Detection (which may also degrade)
-- [ ] `GET /health` shows `mcp_gx: "degraded"` while `status` is `"degraded"`
-- [ ] Restart `mcp-gx` (`docker compose start mcp-gx`); next investigation runs cleanly
+- [x] Stop `mcp-gx` (`docker compose stop mcp-gx`), trigger an investigation
+- [x] Verify: `errors` list in state is non-empty; `validation_result` is absent or has `"degraded":True`; workflow continues to Detection (which may also degrade)
+- [x] `GET /health` shows `mcp_gx: "degraded"` while `status` is `"degraded"`
+- [x] Restart `mcp-gx` (`docker compose start mcp-gx`); next investigation runs cleanly
 
 **Verify:** Investigation triggered with mcp-gx down returns a response (not a 500) with `errors` populated.
 
@@ -660,9 +660,9 @@ docker compose exec app python scripts/seed_demo_data.py
 
 ### T-63 · Graceful degradation — unknown table
 
-- [ ] Trigger investigation with `table_name="nonexistent_table"`
-- [ ] Verify: RAG returns empty list for all 4 queries; agents handle empty RAG results without crashing; investigation still completes (may reach `detection_complete` with `anomaly_detected=False`)
-- [ ] No unhandled exceptions in `docker compose logs app`
+- [x] Trigger investigation with `table_name="nonexistent_table"`
+- [x] Verify: RAG returns empty list for all 4 queries; agents handle empty RAG results without crashing; investigation still completes (may reach `detection_complete` with `anomaly_detected=False`)
+- [x] No unhandled exceptions in `docker compose logs app`
 
 **Verify:** `GET /api/v1/investigations/{id}` returns a valid (possibly shallow) state for the nonexistent-table investigation.
 
@@ -670,9 +670,9 @@ docker compose exec app python scripts/seed_demo_data.py
 
 ### T-64 · BM25 empty-corpus guard
 
-- [ ] `docker compose exec app python -c "from src.rag.retriever import DataQualityRetriever; from src.config import MODELS; r = DataQualityRetriever('chroma',8000,MODELS['embeddings']); print(r.retrieve_similar_anomalies('test'))"`
-- [ ] If Chroma is empty (before seeding), the above must return `[]` without raising — confirms lazy init works
-- [ ] After seeding, the same call returns documents
+- [x] `docker compose exec app python -c "from src.rag.retriever import DataQualityRetriever; from src.config import MODELS; r = DataQualityRetriever('chroma',8000,MODELS['embeddings']); print(r.retrieve_similar_anomalies('test'))"`
+- [x] If Chroma is empty (before seeding), the above must return `[]` without raising — confirms lazy init works
+- [x] After seeding, the same call returns documents
 
 **Verify:** No `IndexError` or `ValueError` when retriever is called on empty collection.
 
@@ -680,11 +680,11 @@ docker compose exec app python scripts/seed_demo_data.py
 
 ### T-65 · Feedback learning loop end-to-end
 
-- [ ] Trigger investigation #1 (null spike); wait for `remediation_complete`
-- [ ] Submit feedback: `POST /api/v1/investigations/{id1}/feedback` with `{"was_resolved":true,"resolution_notes":"Rolled back API"}`
-- [ ] Trigger investigation #2 (same null spike trigger)
-- [ ] Check that `detection_result.similar_past_anomalies` in investigation #2 includes a reference to investigation #1's resolved outcome
-- [ ] Verify `decisions.db`: `SELECT COUNT(*) FROM agent_decisions WHERE was_correct=1` > 0
+- [x] Trigger investigation #1 (null spike); wait for `remediation_complete`
+- [x] Submit feedback: `POST /api/v1/investigations/{id1}/feedback` with `{"was_resolved":true,"resolution_notes":"Rolled back API"}`
+- [x] Trigger investigation #2 (same null spike trigger)
+- [x] Check that `detection_result.similar_past_anomalies` in investigation #2 includes a reference to investigation #1's resolved outcome
+- [x] Verify `decisions.db`: `SELECT COUNT(*) FROM agent_decisions WHERE was_correct=1` > 0
 
 **Verify:** Investigation #2's `DetectionResult` shows at least 1 `similar_past_anomaly` with `resolution` populated.
 
@@ -692,9 +692,9 @@ docker compose exec app python scripts/seed_demo_data.py
 
 ### T-66 · SqliteSaver thread safety check
 
-- [ ] Trigger 3 investigations simultaneously (3 concurrent `curl -X POST` in background)
-- [ ] Check `docker compose logs app` for any `sqlite3.ProgrammingError: SQLite objects created in a thread can only be used in that same thread`
-- [ ] If errors appear: update `create_checkpointer` to use `sqlite3.connect(path, check_same_thread=False)` pattern compatible with `SqliteSaver`
+- [x] Trigger 3 investigations simultaneously (3 concurrent `curl -X POST` in background)
+- [x] Check `docker compose logs app` for any `sqlite3.ProgrammingError: SQLite objects created in a thread can only be used in that same thread`
+- [x] If errors appear: update `create_checkpointer` to use `sqlite3.connect(path, check_same_thread=False)` pattern compatible with `SqliteSaver`
 
 **Verify:** All 3 concurrent investigations complete without SQLite errors in logs.
 

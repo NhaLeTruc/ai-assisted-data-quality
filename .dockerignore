@@ -1,0 +1,31 @@
+# Git
+.git
+.gitignore
+
+# Docs — not needed at runtime
+docs/
+
+# Local data volumes — mounted at runtime, never baked into image
+data/
+
+# Dev tooling
+.venv/
+*.egg-info/
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+.ruff_cache/
+.pre-commit-config.yaml
+pyproject.toml
+requirements-dev.txt
+
+# Secrets
+.env
+
+# UI source — served from ui/ container, not the app container
+ui/
+
+# IDE
+.vscode/
+.idea/

@@ -36,7 +36,7 @@ class DataQualityRetriever:
             result = collection.get(include=["documents", "metadatas"])
         except Exception as e:
             logger.warning("Could not load collection %s: %s", collection_name, e)
-            self._retrievers[collection_name] = None
+            # Do not cache None — collection may become available after seeding
             return None
 
         raw_docs = result.get("documents") or []
@@ -44,7 +44,7 @@ class DataQualityRetriever:
 
         if not raw_docs:
             logger.info("Collection %s is empty — retriever deferred", collection_name)
-            self._retrievers[collection_name] = None
+            # Do not cache None — collection may be seeded later without app restart
             return None
 
         lc_docs = [

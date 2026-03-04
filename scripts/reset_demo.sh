@@ -10,8 +10,8 @@ rm -rf ./data/chroma/* ./data/sqlite/*
 echo "==> Starting services..."
 docker compose up -d
 
-echo "==> Waiting 30 seconds for services to become healthy..."
-sleep 30
+echo "==> Waiting 45 seconds for services to become healthy..."
+sleep 45
 
 echo "==> Seeding demo data..."
 docker compose exec app python scripts/seed_demo_data.py
