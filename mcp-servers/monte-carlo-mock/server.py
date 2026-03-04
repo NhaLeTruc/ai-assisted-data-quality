@@ -196,7 +196,8 @@ def query_catalog(search_term: str, limit: int = 10) -> list:
     return (results or _CATALOG)[:limit]
 
 
-app = FastAPI(title="Monte Carlo Mock MCP Server")
+_mcp_http_app = mcp.http_app()
+app = FastAPI(title="Monte Carlo Mock MCP Server", lifespan=_mcp_http_app.lifespan)
 
 
 @app.get("/health")
@@ -204,7 +205,7 @@ async def health():
     return {"status": "ok", "server": "monte-carlo-mock"}
 
 
-app.mount("/mcp", mcp.http_app())
+app.mount("/", _mcp_http_app)
 
 
 if __name__ == "__main__":

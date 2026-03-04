@@ -123,7 +123,7 @@ async def get_investigation(investigation_id: str, request: Request) -> dict:
     workflow = request.app.state.workflow
     config = {"configurable": {"thread_id": investigation_id}}
     try:
-        snapshot = workflow.get_state(config)
+        snapshot = await workflow.aget_state(config)
     except Exception as exc:
         raise HTTPException(status_code=404, detail="Investigation not found") from exc
 

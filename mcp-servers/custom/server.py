@@ -291,7 +291,8 @@ def get_similar_anomalies(description: str, anomaly_type: str, limit: int = 5) -
         return []
 
 
-app = FastAPI(title="Custom Tools MCP Server")
+_mcp_http_app = mcp.http_app()
+app = FastAPI(title="Custom Tools MCP Server", lifespan=_mcp_http_app.lifespan)
 
 
 @app.get("/health")
@@ -299,7 +300,7 @@ async def health():
     return {"status": "ok", "server": "custom-tools"}
 
 
-app.mount("/mcp", mcp.http_app())
+app.mount("/", _mcp_http_app)
 
 
 if __name__ == "__main__":

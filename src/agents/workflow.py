@@ -1,7 +1,5 @@
-import os
 from typing import TypedDict
 
-from langgraph.checkpoint.sqlite import SqliteSaver
 from langgraph.graph import END, StateGraph
 from langgraph.graph.state import CompiledStateGraph as CompiledGraph
 
@@ -13,6 +11,7 @@ from src.agents.orchestrator import (
     orchestrator_node,
     route_from_orchestrator,
     safe_agent_node,
+    terminal_node,
 )
 from src.agents.repair import repair_node
 from src.agents.validation import validation_node
@@ -57,11 +56,8 @@ class WorkflowMemory(TypedDict):
     agent_latencies: dict  # {agent_name: elapsed_ms}
 
 
-def build_workflow(sqlite_path: str) -> CompiledGraph:
+def build_workflow(checkpointer) -> CompiledGraph:
     """Build and compile the full LangGraph data-quality investigation workflow."""
-    os.makedirs(os.path.dirname(sqlite_path), exist_ok=True)
-    memory = SqliteSaver.from_conn_string(sqlite_path)
-
     graph: StateGraph = StateGraph(DataQualityState)
 
     graph.add_node("orchestrator", safe_agent_node(orchestrator_node))
@@ -71,6 +67,7 @@ def build_workflow(sqlite_path: str) -> CompiledGraph:
     graph.add_node("lineage", safe_agent_node(lineage_node))
     graph.add_node("impact_agent", safe_agent_node(business_impact_node))
     graph.add_node("repair", safe_agent_node(repair_node))
+    graph.add_node("terminal", terminal_node)
 
     graph.set_entry_point("orchestrator")
 
@@ -81,9 +78,11 @@ def build_workflow(sqlite_path: str) -> CompiledGraph:
             "validation": "validation",
             "diagnosis": "diagnosis",
             "business_impact": "impact_agent",
-            "complete": END,
+            "complete": "terminal",
         },
     )
+
+    graph.add_edge("terminal", END)
 
     # Phase 1 chain: validation → detection → orchestrator
     graph.add_edge("validation", "detection")
@@ -97,4 +96,4 @@ def build_workflow(sqlite_path: str) -> CompiledGraph:
     graph.add_edge("impact_agent", "repair")
     graph.add_edge("repair", "orchestrator")
 
-    return graph.compile(checkpointer=memory)
+    return graph.compile(checkpointer=checkpointer)

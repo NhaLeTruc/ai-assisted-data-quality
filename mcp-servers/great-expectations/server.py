@@ -196,7 +196,8 @@ def get_validation_results(dataset_id: str, suite_name: str) -> dict:
 # Attempt GX init at startup (non-fatal if it fails)
 _init_gx_context()
 
-app = FastAPI(title="Great Expectations MCP Server")
+_mcp_http_app = mcp.http_app()
+app = FastAPI(title="Great Expectations MCP Server", lifespan=_mcp_http_app.lifespan)
 
 
 @app.get("/health")
@@ -204,7 +205,7 @@ async def health():
     return {"status": "ok", "server": "great-expectations"}
 
 
-app.mount("/mcp", mcp.http_app())
+app.mount("/", _mcp_http_app)
 
 
 if __name__ == "__main__":

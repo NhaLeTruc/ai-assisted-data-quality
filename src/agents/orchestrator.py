@@ -134,9 +134,43 @@ def get_retriever() -> DataQualityRetriever:
 # MCP helper
 # ---------------------------------------------------------------------------
 
+# Cached session IDs per server URL (FastMCP 3.x Streamable HTTP transport)
+_mcp_sessions: dict[str, str] = {}
+
+_MCP_HEADERS = {"Content-Type": "application/json", "Accept": "application/json, text/event-stream"}
+
+
+def _parse_sse(text: str) -> dict:
+    """Extract JSON payload from an SSE response or plain JSON string."""
+    for line in text.splitlines():
+        if line.startswith("data: "):
+            return json.loads(line[6:])
+    return json.loads(text)
+
+
+async def _init_mcp_session(client: httpx.AsyncClient, server_url: str) -> str | None:
+    """POST initialize to acquire a session ID from the MCP server."""
+    payload = {
+        "jsonrpc": "2.0",
+        "id": 0,
+        "method": "initialize",
+        "params": {
+            "protocolVersion": "2024-11-05",
+            "capabilities": {},
+            "clientInfo": {"name": "data-quality-agent", "version": "1.0"},
+        },
+    }
+    try:
+        resp = await client.post(server_url, json=payload, headers=_MCP_HEADERS)
+        resp.raise_for_status()
+        return resp.headers.get("mcp-session-id")
+    except Exception as e:
+        logger.warning("MCP session init failed for %s: %s", server_url, e)
+        return None
+
 
 async def call_mcp_tool(server_url: str, tool_name: str, arguments: dict) -> dict | list:
-    """Call a single MCP tool via HTTP JSON-RPC. Returns {} on any failure."""
+    """Call a single MCP tool via Streamable HTTP transport. Returns {} on any failure."""
     payload = {
         "jsonrpc": "2.0",
         "id": 1,
@@ -144,15 +178,35 @@ async def call_mcp_tool(server_url: str, tool_name: str, arguments: dict) -> dic
         "params": {"name": tool_name, "arguments": arguments},
     }
     try:
-        async with httpx.AsyncClient(timeout=30.0) as client:
-            resp = await client.post(server_url, json=payload)
+        async with httpx.AsyncClient(timeout=30.0, follow_redirects=True) as client:
+            session_id = _mcp_sessions.get(server_url)
+            if not session_id:
+                session_id = await _init_mcp_session(client, server_url)
+                if session_id:
+                    _mcp_sessions[server_url] = session_id
+
+            headers = {**_MCP_HEADERS}
+            if session_id:
+                headers["mcp-session-id"] = session_id
+
+            resp = await client.post(server_url, json=payload, headers=headers)
+
+            # Session expired — reinitialize once and retry
+            if resp.status_code in (400, 404) and session_id:
+                _mcp_sessions.pop(server_url, None)
+                session_id = await _init_mcp_session(client, server_url)
+                if session_id:
+                    _mcp_sessions[server_url] = session_id
+                    headers["mcp-session-id"] = session_id
+                    resp = await client.post(server_url, json=payload, headers=headers)
+
             resp.raise_for_status()
-            data = resp.json()
+            data = _parse_sse(resp.text)
             content = data.get("result", {}).get("content", [])
             if content and isinstance(content, list):
                 first = content[0]
-                text = first.get("text", "{}") if isinstance(first, dict) else "{}"
-                return json.loads(text)
+                raw = first.get("text", "{}") if isinstance(first, dict) else "{}"
+                return json.loads(raw)
             return data.get("result", {})
     except Exception as e:
         logger.warning("MCP call %s.%s failed: %s", server_url, tool_name, e)
@@ -187,6 +241,11 @@ def safe_agent_node(agent_fn):
 # ---------------------------------------------------------------------------
 # Orchestrator node
 # ---------------------------------------------------------------------------
+
+
+async def terminal_node(state: dict) -> dict:
+    """Final node: marks the workflow as complete."""
+    return {"workflow_complete": True}
 
 
 async def orchestrator_node(state: dict) -> dict:
