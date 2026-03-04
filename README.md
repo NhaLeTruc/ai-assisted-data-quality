@@ -62,6 +62,167 @@ The codebase demonstrates several patterns that are difficult to find in a singl
 
 ---
 
+## How alerts and data reach this app
+
+### The trigger model — metadata in, not data in
+
+The app does **not** receive raw data files. When something goes wrong, a monitoring tool sends a small JSON payload describing the problem — the table name, the type of alert, and a human-readable description. The agents then go and fetch the actual data themselves by calling the MCP tool servers.
+
+```
+Monitoring tool                    This app
+────────────────    HTTP POST     ──────────────────────────────────────
+Monte Carlo      ──────────────► POST /api/v1/investigations
+dbt test failure                  {
+Airflow sensor                      "dataset_id": "orders_2026_03",
+GE Cloud alert                      "table_name": "orders",
+Custom script                       "alert_type": "null_spike",
+Manual UI form                      "description": "5% null rate in customer_id",
+                                    "context": { ...any extra fields... }
+                                  }
+```
+
+The five `alert_type` values the agents understand are `null_spike`, `volume_drop`, `schema_drift`, `freshness_lag`, and `manual`. Anything else falls back to `manual` handling.
+
+The `context` field is a free-form dictionary — pass through whatever metadata your monitoring tool provides (row counts, threshold values, pipeline run IDs, etc.) and the agents will include it in their analysis.
+
+### What the agents pull after the trigger
+
+Once triggered, each agent reaches out to the relevant data source via an MCP tool call:
+
+| Agent | Data source | What it fetches |
+|---|---|---|
+| Validation | GX MCP server (`:8081`) | Runs an expectation suite against the dataset file; returns pass/fail per rule |
+| Detection | Monte Carlo MCP (`:8082`) | Table health score, recent anomaly history, statistical metrics |
+| Diagnosis | Monte Carlo MCP (`:8082`) | Extended 48-hour anomaly window for trend analysis |
+| Lineage | Custom MCP (`:8083`) | Upstream pipelines and downstream consumers to a configurable depth |
+| Business impact | Custom MCP (`:8083`) | SLA thresholds, financial impact estimates, escalation contacts |
+| Repair | Custom MCP (`:8083`) | Similar past anomalies and their resolutions |
+
+Every agent also queries the **Chroma vector database** for relevant history from previous incidents — this is what gets richer over time as you run more investigations and submit feedback.
+
+The dataset files themselves are mounted into the GX MCP server container at startup via a Docker volume (`./demo-data:/demo-data`). In production you would replace this with a connector to your actual data warehouse — Snowflake, BigQuery, Databricks, etc. — by implementing the MCP tool interface against your warehouse's query API.
+
+### Connecting a real monitoring tool
+
+Because the entry point is a plain HTTP POST, any monitoring tool that supports webhooks can drive an investigation. The pattern is the same in each case: receive the alert from the tool, translate its payload into an `InvestigationTrigger`, and POST it to the app.
+
+**Monte Carlo webhook → investigation:**
+```python
+# In your Monte Carlo webhook handler
+@app.post("/webhooks/monte-carlo")
+async def mc_webhook(event: dict):
+    await httpx.AsyncClient().post(
+        "http://dq-platform:8000/api/v1/investigations",
+        json={
+            "dataset_id": event["asset_id"],
+            "table_name": event["table"],
+            "alert_type": event["breach_type"],          # map MC types to ours
+            "description": event["message"],
+            "context": {"mc_incident_id": event["id"]},
+        },
+    )
+```
+
+**dbt Cloud job failure → investigation:**
+```python
+# In a dbt Cloud webhook or Airflow callback
+def on_dbt_test_failure(run_id, failed_tests):
+    for test in failed_tests:
+        httpx.post(
+            "http://dq-platform:8000/api/v1/investigations",
+            json={
+                "dataset_id": test["relation"],
+                "table_name": test["relation"].split(".")[-1],
+                "alert_type": "null_spike" if "not_null" in test["name"] else "manual",
+                "description": f"dbt test failed: {test['name']}",
+                "context": {"dbt_run_id": run_id, "test_name": test["name"]},
+            },
+        )
+```
+
+**Airflow task sensor:**
+```python
+# Trigger from a downstream Airflow task that checks data quality
+from airflow.operators.python import PythonOperator
+import httpx
+
+def trigger_investigation(**context):
+    resp = httpx.post(
+        "http://dq-platform:8000/api/v1/investigations",
+        json={
+            "dataset_id": context["params"]["dataset_id"],
+            "table_name": context["params"]["table_name"],
+            "alert_type": "volume_drop",
+            "description": "Row count below expected threshold",
+            "context": {"dag_run_id": context["run_id"]},
+        },
+    )
+    # Store investigation_id in XCom for the polling task
+    return resp.json()["investigation_id"]
+```
+
+The response to every POST is immediate (HTTP 202) with an `investigation_id`. The investigation runs asynchronously in the background. Poll `GET /api/v1/investigations/{id}` until `workflow_complete` is `true`, then read the results.
+
+---
+
+## Throughput and production considerations
+
+### What a single investigation costs in time and money
+
+The workflow runs three phases, each with one or two agent calls. The agents run **sequentially within a phase** (each agent's output feeds the next), but the overall pipeline is asynchronous so the server stays responsive to new requests while one investigation is in flight.
+
+| Phase | Agents | Model | Max timeout |
+|---|---|---|---|
+| Phase 1 | Validation + Detection | Haiku 4.5 + Sonnet 4.6 | 15 s + 30 s |
+| Phase 2 | Diagnosis + Lineage | Opus 4.6 + Sonnet 4.6 | 60 s + 30 s |
+| Phase 3 | Business Impact + Repair | Opus 4.6 + Sonnet 4.6 | 60 s + 30 s |
+
+Phases 2 and 3 are **severity-gated** — they only run when an anomaly is detected and its severity is `critical` or `high`. A low-confidence or informational alert completes after Phase 1 alone (under 60 seconds).
+
+Typical observed latency for a full critical-path investigation (all six agents) is **60–120 seconds** under normal Anthropic API response times. The worst-case with retries (three attempts, exponential backoff up to 60 s between attempts) is around six minutes — this only occurs during severe API degradation.
+
+API cost per investigation varies by routing path:
+
+| Path | Agents called | Approximate cost |
+|---|---|---|
+| Clean data (no anomaly) | Validation + Detection | ~$0.002 |
+| Anomaly, warning severity | + Diagnosis + Lineage | ~$0.04 |
+| Anomaly, critical/high severity | All six agents | ~$0.08–$0.12 |
+
+Cost tracking is built in — check `GET /health` for the running session total and per-investigation average.
+
+### Concurrency in the current architecture
+
+The app runs as a **single uvicorn process** with a single asyncio event loop. Background investigations share that loop with incoming HTTP requests. Because almost all agent work is I/O-bound (waiting for Claude API responses and MCP HTTP calls), multiple investigations can genuinely overlap — Python's async scheduler interleaves them while each is waiting for a network response.
+
+In practice **3–5 simultaneous investigations** run without noticeable degradation. Beyond that, two bottlenecks emerge:
+
+1. **SQLite write serialisation** — LangGraph checkpoints every state transition to `checkpoints.db`. SQLite allows only one writer at a time; concurrent investigations queue on the write lock rather than fail, but latency climbs.
+2. **Anthropic rate limits** — the default `MAX_REQUESTS_PER_MINUTE=60` applies across all in-flight investigations. A burst of ten simultaneous investigations each making six Claude calls would hit this ceiling immediately, causing retries and added latency.
+
+### Adapting for higher throughput
+
+This deployment is designed for **teams running tens of investigations per day** — incident-driven workflows where a human or automated monitor triggers an investigation per alert, not a continuous stream of thousands of events.
+
+If your volume or concurrency requirements exceed that, the following changes address the main constraints — roughly in order of impact:
+
+**Replace SQLite with PostgreSQL for checkpointing**
+LangGraph ships `langgraph-checkpoint-postgres` which uses row-level locking instead of a file-wide write lock. This removes the single biggest concurrency bottleneck and allows many investigations to checkpoint simultaneously.
+
+**Move workflow execution to a task queue**
+Decouple the HTTP ingest layer from workflow execution with Celery + Redis, or a durable workflow engine like Temporal. The FastAPI app enqueues a job and returns immediately; a pool of worker processes picks up and runs the LangGraph workflow. This lets you scale workers independently of the API tier and survive app restarts mid-investigation.
+
+**Raise the Anthropic API tier**
+Anthropic rate limits scale with your usage tier. Tier 4 access provides ~2,000 RPM for Haiku and ~1,000 RPM for Sonnet; Opus limits are lower but still sufficient for hundreds of investigations per hour. Contact Anthropic sales for volume arrangements.
+
+**Scale ChromaDB horizontally**
+The current setup runs ChromaDB as a single container. For high read throughput (many agents querying the knowledge base simultaneously), deploy ChromaDB in distributed mode behind a load balancer. The app already uses the HTTP client interface, so no code changes are needed.
+
+**Replace the in-process MCP servers with scaled services**
+The three MCP servers are single-process FastAPI apps. For high-volume production, deploy each as a horizontally scaled service behind a load balancer and point `MCP_GX_URL`, `MCP_MC_URL`, `MCP_CUSTOM_URL` at the load balancer addresses.
+
+---
+
 ## System architecture
 
 ```
